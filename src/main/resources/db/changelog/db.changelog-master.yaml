@@ -1,3 +1,6 @@
 databaseChangeLog:
   - include:
-      file: db/changelog/db.changelog-001-create-test-table.yaml
+      file: db/changelog/changes/001-create-assets.yaml
+  - include:
+      file: db/changelog/changes/002-create-price-history.yaml
+

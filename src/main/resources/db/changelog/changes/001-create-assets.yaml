@@ -1,0 +1,42 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001
+      author: liquibase
+      changes:
+        - createTable:
+            tableName: assets
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: symbol
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+
+        - addUniqueConstraint:
+            tableName: assets
+            columnNames: symbol
+            constraintName: uq_assets_symbol
+
+        - createIndex:
+            tableName: assets
+            indexName: idx_assets_type
+            columns:
+              - column:
+                  name: type
