@@ -1,0 +1,131 @@
+openapi: 3.0.3
+info:
+  title: DCA API
+  description: API to calculate and simulate Dollar Cost Averaging (DCA) strategies.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local server
+paths:
+
+  /status:
+    get:
+      summary: Check the health of the service
+      description: Returns the current operational status of the DCA API, including service name and timestamp.
+      operationId: getStatus
+      tags:
+        - HEALTH
+      security:
+        - ApiKeyAuth: [ ]
+      responses:
+        "200":
+          description: Service is up and running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+
+  /dca/calculate:
+    post:
+      summary: Calculate DCA simulation
+      operationId: calculateDca
+      tags:
+        - DCA
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DcaRequest'
+      responses:
+        '200':
+          description: Successful calculation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DcaResponse'
+        '401':
+          description: Unauthorized - Invalid API Key
+        '400':
+          description: Bad Request - Validation error
+
+components:
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+
+  schemas:
+
+    StatusResponse:
+      type: object
+      description: Response object containing the current status of the service
+      properties:
+        status:
+          type: string
+          description: Current status of the service (e.g., "ok", "down")
+          example: ok
+        service:
+          type: string
+          description: Name of the service reporting its status
+          example: dca-api
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp indicating when the status was generated
+          example: "2026-01-18T12:34:56Z"
+      required:
+        - status
+        - service
+        - timestamp
+    DcaRequest:
+      type: object
+      required:
+        - symbol
+        - amount
+        - frequency
+        - start_date
+        - end_date
+      properties:
+        symbol:
+          type: string
+          example: BTC-EUR
+        amount:
+          type: number
+          format: double
+          example: 100
+        frequency:
+          type: string
+          enum: [daily, weekly, monthly]
+          example: weekly
+        start_date:
+          type: string
+          format: date
+          example: '2023-01-01'
+        end_date:
+          type: string
+          format: date
+          example: '2026-01-16'
+    DcaResponse:
+      type: object
+      properties:
+        total_invested:
+          type: number
+          format: double
+          example: 15600
+        units:
+          type: number
+          format: double
+          example: 0.342
+        final_value:
+          type: number
+          format: double
+          example: 28500
+        roi_pct:
+          type: number
+          format: double
+          example: 82.7
