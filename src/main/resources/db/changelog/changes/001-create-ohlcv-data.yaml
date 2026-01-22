@@ -1,0 +1,97 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-ohlcv-data-table
+      author: jtristante
+      changes:
+        - createTable:
+            tableName: ohlcv_data
+            remarks: "Historical OHLCV price data per symbol and date"
+            columns:
+              - column:
+                  name: symbol_id
+                  type: BIGINT
+                  remarks: "FK to symbols.id"
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: price_date
+                  type: DATE
+                  remarks: "Trading date"
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: open
+                  type: DECIMAL(19,8)
+                  remarks: "Opening price"
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: high
+                  type: DECIMAL(19,8)
+                  remarks: "Highest price of the day"
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: low
+                  type: DECIMAL(19,8)
+                  remarks: "Lowest price of the day"
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: close
+                  type: DECIMAL(19,8)
+                  remarks: "Closing price"
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: volume
+                  type: BIGINT
+                  remarks: "Trading volume"
+                  constraints:
+                    nullable: true
+
+              - column:
+                  name: dividend
+                  type: DECIMAL(19,8)
+                  remarks: "Dividend paid on that date (if any)"
+                  defaultValueNumeric: "0"
+                  constraints:
+                    nullable: false
+
+        # PK compuesta
+        - addPrimaryKey:
+            tableName: ohlcv_data
+            columnNames: symbol_id, price_date
+            constraintName: pk_ohlcv_data
+
+        # FK
+        - addForeignKeyConstraint:
+            baseTableName: ohlcv_data
+            baseColumnNames: symbol_id
+            referencedTableName: symbols
+            referencedColumnNames: id
+            constraintName: fk_ohlcv_symbol
+            onDelete: CASCADE
+
+        # Índices útiles
+        - createIndex:
+            tableName: ohlcv_data
+            indexName: idx_ohlcv_symbol_date
+            columns:
+              - column:
+                  name: symbol_id
+              - column:
+                  name: price_date
+
+        - createIndex:
+            tableName: ohlcv_data
+            indexName: idx_ohlcv_date
+            columns:
+              - column:
+                  name: price_date
