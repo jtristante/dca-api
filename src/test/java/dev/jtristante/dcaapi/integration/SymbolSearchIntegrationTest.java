@@ -34,7 +34,7 @@ class SymbolSearchIntegrationTest {
     @Test
     void searchSymbols_byName_shouldReturnMatchingSymbols() throws Exception {
         when(symbolService.search("bit", null))
-                .thenReturn(List.of(new SymbolResponse("BTC-EUR", "Bitcoin Euro", "CRYPTO")));
+                .thenReturn(List.of(new SymbolResponse("BTC-EUR", "Bitcoin Euro", SymbolResponse.InstrumentTypeEnum.STOCK)));
 
         mockMvc.perform(get("/api/v1/symbols")
                         .header(API_KEY_HEADER, API_KEY_VALUE)
@@ -48,7 +48,7 @@ class SymbolSearchIntegrationTest {
     @Test
     void searchSymbols_byNameAndTicker_shouldReturnMatchingSymbols() throws Exception {
         when(symbolService.search("Euro", "ETH"))
-                .thenReturn(List.of(new SymbolResponse("ETH-EUR", "Ethereum Euro", "CRYPTO")));
+                .thenReturn(List.of(new SymbolResponse("ETH-EUR", "Ethereum Euro", SymbolResponse.InstrumentTypeEnum.ETF)));
 
         mockMvc.perform(get("/api/v1/symbols")
                         .header(API_KEY_HEADER, API_KEY_VALUE)

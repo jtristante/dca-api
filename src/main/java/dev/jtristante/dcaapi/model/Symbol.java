@@ -20,8 +20,9 @@ public class Symbol {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, length = 50)
-    private String type;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "instrument_type", nullable = false, length = 50)
+    private InstrumentType instrumentType;
 
     /**
      * Default constructor for JPA.
@@ -54,12 +55,12 @@ public class Symbol {
         this.name = name;
     }
 
-    public String getType() {
-        return type;
+    public InstrumentType getInstrumentType() {
+        return instrumentType;
     }
 
-    public void setType(String type) {
-        this.type = type;
+    public void setInstrumentType(InstrumentType instrumentType) {
+        this.instrumentType = instrumentType;
     }
 
     @Override
@@ -81,7 +82,7 @@ public class Symbol {
                 "id=" + id +
                 ", ticker='" + ticker + '\'' +
                 ", name='" + name + '\'' +
-                ", type='" + type + '\'' +
+                ", instrumentType=" + instrumentType +
                 '}';
     }
 }

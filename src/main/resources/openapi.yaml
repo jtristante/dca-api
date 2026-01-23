@@ -172,7 +172,7 @@ components:
       required:
         - ticker
         - name
-        - type
+        - instrumentType
       properties:
         ticker:
           type: string
@@ -180,6 +180,7 @@ components:
         name:
           type: string
           example: Bitcoin Euro
-        type:
+        instrumentType:
           type: string
-          example: CRYPTO
+          enum: [ STOCK, ETF, INDEX ]
+          example: STOCK
