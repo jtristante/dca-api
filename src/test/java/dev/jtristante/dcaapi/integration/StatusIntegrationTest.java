@@ -17,9 +17,10 @@ class StatusIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
+
     @Test
     void statusEndpoint_shouldReturn200AndJson() throws Exception {
-        mockMvc.perform(get("/status"))
+        mockMvc.perform(get("/api/v1/status"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.status").value("ok"))
