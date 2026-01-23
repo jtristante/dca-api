@@ -17,7 +17,7 @@ public class Symbol {
     @Column(nullable = false, length = 32)
     private String ticker;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String name;
 
     @Column(nullable = false, length = 50)
@@ -26,7 +26,8 @@ public class Symbol {
     /**
      * Default constructor for JPA.
      */
-    protected Symbol() {
+    public Symbol() {
+        //Default constructor for JPA
     }
 
     public Long getId() {
