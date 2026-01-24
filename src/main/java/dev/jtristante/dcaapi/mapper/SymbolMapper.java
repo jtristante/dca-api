@@ -11,9 +11,9 @@ import java.util.List;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface SymbolMapper {
 
-    SymbolResponse toDto(Symbol symbol);
+    SymbolResponse symbolToSymbolResponse(Symbol symbol);
 
-    List<SymbolResponse> toDtoList(List<Symbol> symbols);
+    List<SymbolResponse> symbolListToSymbolResponseList(List<Symbol> symbols);
 
     default SymbolResponse.InstrumentTypeEnum map(InstrumentType instrumentType) {
         if (instrumentType == null) {

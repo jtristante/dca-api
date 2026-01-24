@@ -4,10 +4,12 @@ import dev.jtristante.dcaapi.dto.SymbolResponse;
 import dev.jtristante.dcaapi.mapper.SymbolMapper;
 import dev.jtristante.dcaapi.model.Symbol;
 import dev.jtristante.dcaapi.repository.SymbolRepository;
+import io.micrometer.common.util.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class SymbolService {
@@ -22,16 +24,16 @@ public class SymbolService {
 
     @Transactional(readOnly = true)
     public List<SymbolResponse> search(String name, String ticker) {
-        if (name == null || name.isBlank()) {
+        if (StringUtils.isBlank(name)) {
             throw new IllegalArgumentException("Name parameter is mandatory");
         }
 
-        String tickerParam = (ticker == null || ticker.isBlank()) ? null : ticker;
+        String tickerParam = Optional.ofNullable(ticker).filter(t -> !t.isBlank()).orElse(null);
 
         List<Symbol> symbols = (tickerParam == null)
                 ? symbolRepository.findByNameContainingIgnoreCase(name)
                 : symbolRepository.findByNameContainingIgnoreCaseAndTickerStartingWithIgnoreCase(name, tickerParam);
 
-        return symbolMapper.toDtoList(symbols);
+        return symbolMapper.symbolListToSymbolResponseList(symbols);
     }
 }
