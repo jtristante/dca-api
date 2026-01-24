@@ -1,7 +1,7 @@
 package dev.jtristante.dcaapi.model;
 
 public enum InstrumentType {
-    STOCK,
+    STOCKS,
     ETF,
     INDEX
 }
