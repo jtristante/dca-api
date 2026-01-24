@@ -9,6 +9,42 @@ servers:
     description: Local server
 paths:
 
+  /symbols:
+    get:
+      summary: Search symbols by name and/or ticker
+      operationId: searchSymbols
+      tags:
+        - Symbols
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          description: Name of the symbol to search for (case-insensitive, contains)
+        - name: ticker
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Ticker of the symbol to search for (case-insensitive, starts with or exact)
+      responses:
+        '200':
+          description: Successful search
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SymbolResponse'
+        '401':
+          description: Unauthorized - Missing or invalid API key
+        '403':
+          description: Forbidden - Access denied
+
   /status:
     get:
       summary: Check the health of the service
@@ -131,3 +167,20 @@ components:
           type: number
           format: double
           example: 82.7
+    SymbolResponse:
+      type: object
+      required:
+        - ticker
+        - name
+        - instrumentType
+      properties:
+        ticker:
+          type: string
+          example: BTC-EUR
+        name:
+          type: string
+          example: Bitcoin Euro
+        instrumentType:
+          type: string
+          enum: [ STOCK, ETF, INDEX ]
+          example: STOCK
