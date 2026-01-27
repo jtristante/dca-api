@@ -35,6 +35,7 @@ class SymbolSearchIntegrationTest {
 
     @Test
     void searchSymbols_byNameAndTicker_shouldReturnMatchingSymbols() throws Exception {
+
         mockMvc.perform(get("/api/v1/symbols")
                         .header(API_KEY_HEADER, API_KEY_VALUE)
                         .param("name", "Euro")
