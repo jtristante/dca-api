@@ -2,19 +2,14 @@ package dev.jtristante.dcaapi;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
-
-@SpringBootTest(properties = {
-        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration," +
-                "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration," +
-                "org.springframework.boot.autoconfigure.liquibase.LiquibaseAutoConfiguration"
-})
+@SpringBootTest
+@ActiveProfiles("test")
 class DcaApiApplicationTests {
 
     @Test
-    void pureApplicationContextLoads() {
-        assertNull(null);
+    void contextLoads() {
     }
 
 }
