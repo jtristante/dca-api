@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: 004-add-test-symbols
+      id: 000-add-test-symbols
       author: jtristante
       context: test
       changes:
