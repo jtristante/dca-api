@@ -16,7 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Testcontainers
-class SymbolSearchIntegrationTest extends AbstractIntegrationTest {
+class SymbolSearchIT extends AbstractIT {
 
     @Autowired
     private MockMvc mockMvc;
