@@ -1,6 +1,7 @@
 package dev.jtristante.dcaapi.integration;
 
-import dev.jtristante.dcaapi.service.SymbolService;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,7 +29,7 @@ class SymbolSearchIntegrationTest {
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
-            "postgres:16-alpine"
+            "postgres:17-alpine"
     );
 
     @DynamicPropertySource
@@ -38,8 +39,15 @@ class SymbolSearchIntegrationTest {
         registry.add("spring.datasource.password", postgres::getPassword);
     }
 
-    @Autowired
-    private SymbolService symbolService;
+    @BeforeAll
+    static void beforeAll() {
+        postgres.start();
+    }
+
+    @AfterAll
+    static void afterAll() {
+        postgres.stop();
+    }
 
     private static final String API_KEY_HEADER = "X-DCA-Internal-Key";
     private static final String API_KEY_VALUE = "test-api-key";
