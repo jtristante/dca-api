@@ -9,19 +9,12 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 public abstract class AbstractIT {
 
-    static {
-        // CI optimizations for TestContainers
-        System.setProperty("testcontainers.reuse.enable", "true");
-        System.setProperty("testcontainers.ryuk.disabled", "true");
-    }
-
     @SuppressWarnings("resource")
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
             .withDatabaseName("dca_test")
             .withUsername("test")
-            .withPassword("test")
-            .withReuse(true);
+            .withPassword("test");
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
@@ -29,6 +22,5 @@ public abstract class AbstractIT {
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
     }
-
-    // TestContainers automatically manages container lifecycle with @Container annotation
+    
 }
