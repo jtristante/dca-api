@@ -1,11 +1,9 @@
-name: CI - Java Maven Tests
-
+name: CI - Java Maven Tests with SonarCloud
 on:
   push:
     branches: [ main, master, develop ]
   pull_request:
     branches: [ main, master, develop ]
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,14 +18,21 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: maven
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
       - name: Run tests and SonarCloud scan
-        run: ./mvnw clean verify sonar:sonar -B
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          
+        run: ./mvnw clean verify sonar:sonar -B -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+        continue-on-error: false  # Fail the build if scan fails
+      - name: Check if scannerwork exists
+        run: ls -la .scannerwork/ || echo "Scannerwork directory not found"
       - name: SonarCloud Quality Gate check
         uses: sonarsource/sonarqube-quality-gate-action@master
         timeout-minutes: 5
+        if: always()  # Run even if previous steps failed (but not if they were skipped)
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
