@@ -14,22 +14,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Required for SonarCloud
-
       - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           java-version: '25'
           distribution: 'temurin'
           cache: maven
-
-      - name: Build and run tests with Maven
-        run: ./mvnw verify -B
-
       - name: Run tests and SonarCloud scan
         run: ./mvnw clean verify sonar:sonar -B
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
       - name: SonarCloud Quality Gate check
         uses: sonarsource/sonarqube-quality-gate-action@master
         timeout-minutes: 5
