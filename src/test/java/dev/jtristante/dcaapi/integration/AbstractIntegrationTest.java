@@ -9,7 +9,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-public abstract class AbstractIT {
+public abstract class AbstractIntegrationTest {
 
     @Container
     protected static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
