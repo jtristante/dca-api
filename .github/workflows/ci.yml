@@ -24,6 +24,7 @@ jobs:
         run: ./mvnw clean verify sonar:sonar -B
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          
       - name: SonarCloud Quality Gate check
         uses: sonarsource/sonarqube-quality-gate-action@master
         timeout-minutes: 5
