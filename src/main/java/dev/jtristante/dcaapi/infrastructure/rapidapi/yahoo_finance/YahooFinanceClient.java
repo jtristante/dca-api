@@ -3,6 +3,7 @@ package dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance;
 import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.api.YahooFinanceApi;
 import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.GetStocksHistoryResponseDTO;
 import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.IntervalType;
+import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.MarketSearchResponseDTO;
 import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.exception.YahooFinanceException;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -50,5 +51,27 @@ public class YahooFinanceClient implements YahooFinanceApi {
                     );
                 })
                 .body(GetStocksHistoryResponseDTO.class);
+    }
+
+    @Override
+    public MarketSearchResponseDTO searchMarket(@NotNull String search) {
+
+        var uriBuilder = UriComponentsBuilder.fromPath("/v1/markets/search")
+                .queryParam("search", search);
+
+        return restClient.get()
+                .uri(uriBuilder::build)
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError, (_, res) -> {
+                    throw new YahooFinanceException(
+                            "Error 4xx from Yahoo Finance: " + res.getStatusCode()
+                    );
+                })
+                .onStatus(HttpStatusCode::is5xxServerError, (_, res) -> {
+                    throw new YahooFinanceException(
+                            "Error 5xx from Yahoo Finance: " + res.getStatusCode()
+                    );
+                })
+                .body(MarketSearchResponseDTO.class);
     }
 }

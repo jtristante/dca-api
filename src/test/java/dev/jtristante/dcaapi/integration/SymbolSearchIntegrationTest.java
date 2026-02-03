@@ -1,5 +1,7 @@
 package dev.jtristante.dcaapi.integration;
 
+import dev.jtristante.dcaapi.model.Symbol;
+import dev.jtristante.dcaapi.repository.SymbolRepository;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -14,6 +16,9 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -26,6 +31,9 @@ class SymbolSearchIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private SymbolRepository symbolRepository;
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
@@ -87,5 +95,37 @@ class SymbolSearchIntegrationTest {
         mockMvc.perform(get("/api/v1/symbols")
                         .param("name", "bit"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void searchSymbols_emptyDb_shouldCallYahooFinanceAndSaveToDb() throws Exception {
+        // Verify Microsoft symbols are not in DB initially (AAPL is in test data, but MSFT is not)
+        List<Symbol> existingSymbols = symbolRepository.findByNameContainingIgnoreCase("Microsoft");
+        assertThat(existingSymbols).isEmpty();
+
+        // Call endpoint - this should trigger YahooFinance API call and save to DB
+        // Note: YahooFinance mock returns BTC-USD and MSFT for any search
+        mockMvc.perform(get("/api/v1/symbols")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .param("name", "MSFT"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[*].ticker").value(org.hamcrest.Matchers.hasItems("BTC-USD", "MSFT")));
+
+        // Verify data was saved to DB - check both mock results were persisted
+        List<Symbol> allSymbols = symbolRepository.findAll();
+        Symbol savedBtc = allSymbols.stream()
+                .filter(s -> s.getTicker().equals("BTC-USD"))
+                .findFirst()
+                .orElseThrow();
+        assertThat(savedBtc.getName()).isEqualTo("Bitcoin USD");
+        assertThat(savedBtc.getInstrumentType().name()).isEqualTo("CRYPTO");
+
+        Symbol savedMsft = allSymbols.stream()
+                .filter(s -> s.getTicker().equals("MSFT"))
+                .findFirst()
+                .orElseThrow();
+        assertThat(savedMsft.getName()).isEqualTo("Microsoft Corporation");
+        assertThat(savedMsft.getInstrumentType().name()).isEqualTo("STOCKS");
     }
 }
