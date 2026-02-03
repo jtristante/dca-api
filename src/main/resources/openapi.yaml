@@ -184,5 +184,5 @@ components:
           example: Bitcoin Euro
         instrumentType:
           type: string
-          enum: [ STOCKS, ETF, INDEX ]
+          enum: [ STOCKS, ETF, INDEX, CRYPTO ]
           example: STOCKS
