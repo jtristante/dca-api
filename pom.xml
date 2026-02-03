@@ -29,11 +29,17 @@
     <properties>
         <java.version>25</java.version>
         <org.mapstruct.version>1.6.3</org.mapstruct.version>
+        <jacoco.version>0.8.14</jacoco.version>
         <sonar.organization>jtristante</sonar.organization>
         <sonar.projectKey>dca-api</sonar.projectKey>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.java.source>25</sonar.java.source>
         <sonar.java.target>25</sonar.java.target>
+        <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.coverage.exclusions>**/dto/**,**/model/**,**/config/**,**/*Test.java,
+            **/infrastructure/**
+        </sonar.coverage.exclusions>
     </properties>
     <dependencies>
         <dependency>
@@ -133,6 +139,10 @@
             <groupId>jakarta.validation</groupId>
             <artifactId>jakarta.validation-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -203,6 +213,26 @@
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
                 <version>5.5.0.6356</version>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

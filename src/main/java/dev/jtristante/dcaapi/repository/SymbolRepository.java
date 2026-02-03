@@ -9,7 +9,9 @@ import java.util.List;
 @Repository
 public interface SymbolRepository extends JpaRepository<Symbol, Long> {
 
-    List<Symbol> findByNameContainingIgnoreCase(String name);
+    List<Symbol> findByTickerStartingWithIgnoreCase(String ticker);
+
+    List<Symbol> findByNameStartingWithIgnoreCase(String name);
 
     List<Symbol> findByNameContainingIgnoreCaseAndTickerStartingWithIgnoreCase(String name, String ticker);
 }
