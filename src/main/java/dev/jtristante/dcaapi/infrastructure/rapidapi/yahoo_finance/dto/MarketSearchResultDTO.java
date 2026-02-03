@@ -2,7 +2,7 @@ package dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto;
 
 public record MarketSearchResultDTO(
         String shortname,
-        QuoteType quoteType,
+        String quoteType,
         String symbol,
         String index,
         Double score,

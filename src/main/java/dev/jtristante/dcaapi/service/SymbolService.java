@@ -4,24 +4,23 @@ import dev.jtristante.dcaapi.dto.SymbolResponse;
 import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.api.YahooFinanceApi;
 import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.MarketSearchResponseDTO;
 import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.MarketSearchResultDTO;
-import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.QuoteType;
 import dev.jtristante.dcaapi.mapper.SymbolMapper;
 import dev.jtristante.dcaapi.model.Symbol;
 import dev.jtristante.dcaapi.repository.SymbolRepository;
 import io.micrometer.common.util.StringUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class SymbolService {
 
-    private static final EnumSet<QuoteType> SUPPORTED_QUOTE_TYPES = EnumSet.of(
-            QuoteType.EQUITY,
-            QuoteType.ETF,
-            QuoteType.CRYPTOCURRENCY
+    private static final Set<String> SUPPORTED_QUOTE_TYPES = Set.of(
+            "EQUITY",
+            "ETF",
+            "CRYPTOCURRENCY"
     );
 
     private final SymbolRepository symbolRepository;
@@ -54,6 +53,7 @@ public class SymbolService {
             MarketSearchResponseDTO response = yahooFinanceApi.searchMarket(name);
             List<MarketSearchResultDTO> filteredResults = response.body().stream()
                     .filter(dto -> isSupportedQuoteType(dto.quoteType()))
+                    .filter(this::hasValidName)
                     .toList();
 
             if (!filteredResults.isEmpty()) {
@@ -64,7 +64,11 @@ public class SymbolService {
         return symbolMapper.symbolListToSymbolResponseList(symbols);
     }
 
-    private boolean isSupportedQuoteType(QuoteType quoteType) {
-        return quoteType != null && SUPPORTED_QUOTE_TYPES.contains(quoteType);
+    private boolean isSupportedQuoteType(String quoteType) {
+        return quoteType != null && SUPPORTED_QUOTE_TYPES.contains(quoteType.toUpperCase());
+    }
+
+    private boolean hasValidName(MarketSearchResultDTO dto) {
+        return StringUtils.isNotBlank(dto.shortname()) || StringUtils.isNotBlank(dto.longname());
     }
 }

@@ -56,7 +56,7 @@ public class YahooFinanceClient implements YahooFinanceApi {
     @Override
     public MarketSearchResponseDTO searchMarket(@NotNull String search) {
 
-        var uriBuilder = UriComponentsBuilder.fromPath("/v1/markets/search")
+        var uriBuilder = UriComponentsBuilder.fromPath("/api/v1/markets/search")
                 .queryParam("search", search);
 
         return restClient.get()

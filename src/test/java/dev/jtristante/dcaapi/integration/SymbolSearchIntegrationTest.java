@@ -99,33 +99,84 @@ class SymbolSearchIntegrationTest {
 
     @Test
     void searchSymbols_emptyDb_shouldCallYahooFinanceAndSaveToDb() throws Exception {
-        // Verify Microsoft symbols are not in DB initially (AAPL is in test data, but MSFT is not)
-        List<Symbol> existingSymbols = symbolRepository.findByNameContainingIgnoreCase("Microsoft");
+        // Verify test symbols are not in DB initially
+        List<Symbol> existingSymbols = symbolRepository.findAll().stream()
+                .filter(s -> s.getTicker().startsWith("TEST-"))
+                .toList();
         assertThat(existingSymbols).isEmpty();
 
         // Call endpoint - this should trigger YahooFinance API call and save to DB
-        // Note: YahooFinance mock returns BTC-USD and MSFT for any search
         mockMvc.perform(get("/api/v1/symbols")
                         .header(API_KEY_HEADER, API_KEY_VALUE)
-                        .param("name", "MSFT"))
+                        .param("name", "test"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[*].ticker").value(org.hamcrest.Matchers.hasItems("BTC-USD", "MSFT")));
+                .andExpect(jsonPath("$[*].ticker").value(org.hamcrest.Matchers.hasItems("TEST-BTC-USD", "TEST-MSFT")));
 
         // Verify data was saved to DB - check both mock results were persisted
         List<Symbol> allSymbols = symbolRepository.findAll();
         Symbol savedBtc = allSymbols.stream()
-                .filter(s -> s.getTicker().equals("BTC-USD"))
+                .filter(s -> s.getTicker().equals("TEST-BTC-USD"))
                 .findFirst()
                 .orElseThrow();
         assertThat(savedBtc.getName()).isEqualTo("Bitcoin USD");
         assertThat(savedBtc.getInstrumentType().name()).isEqualTo("CRYPTO");
 
         Symbol savedMsft = allSymbols.stream()
-                .filter(s -> s.getTicker().equals("MSFT"))
+                .filter(s -> s.getTicker().equals("TEST-MSFT"))
                 .findFirst()
                 .orElseThrow();
         assertThat(savedMsft.getName()).isEqualTo("Microsoft Corporation");
         assertThat(savedMsft.getInstrumentType().name()).isEqualTo("STOCKS");
+    }
+
+    @Test
+    void searchSymbols_filtersOutSymbolsWithNoName() throws Exception {
+        // Verify symbol with no name is not in DB
+        List<Symbol> existingSymbols = symbolRepository.findAll().stream()
+                .filter(s -> s.getTicker().equals("1OPEN.MI"))
+                .toList();
+        assertThat(existingSymbols).isEmpty();
+
+        // Call endpoint - mock returns symbol with no name
+        mockMvc.perform(get("/api/v1/symbols")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .param("name", "noname"))
+                .andExpect(status().isOk());
+
+        // Verify the symbol with no name was NOT saved to DB
+        List<Symbol> savedSymbols = symbolRepository.findAll();
+        boolean hasSymbolWithNoName = savedSymbols.stream()
+                .anyMatch(s -> s.getTicker().equals("1OPEN.MI"));
+        assertThat(hasSymbolWithNoName).isFalse();
+    }
+
+    @Test
+    void searchSymbols_filtersOutUnsupportedQuoteTypes() throws Exception {
+        // Verify mutual funds and futures are not saved to DB
+        List<Symbol> existingVtsmx = symbolRepository.findAll().stream()
+                .filter(s -> s.getTicker().equals("VTSMX"))
+                .toList();
+        assertThat(existingVtsmx).isEmpty();
+
+        List<Symbol> existingGold = symbolRepository.findAll().stream()
+                .filter(s -> s.getTicker().equals("GC=F"))
+                .toList();
+        assertThat(existingGold).isEmpty();
+
+        // Call endpoint - mock returns unsupported quote types
+        mockMvc.perform(get("/api/v1/symbols")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .param("name", "unsupported"))
+                .andExpect(status().isOk());
+
+        // Verify mutual fund (VTSMX) and future (GC=F) were NOT saved to DB
+        List<Symbol> savedSymbols = symbolRepository.findAll();
+        boolean hasMutualFund = savedSymbols.stream()
+                .anyMatch(s -> s.getTicker().equals("VTSMX"));
+        boolean hasFuture = savedSymbols.stream()
+                .anyMatch(s -> s.getTicker().equals("GC=F"));
+        assertThat(hasMutualFund).isFalse();
+        assertThat(hasFuture).isFalse();
     }
 }

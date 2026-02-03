@@ -2,7 +2,6 @@ package dev.jtristante.dcaapi.mapper;
 
 import dev.jtristante.dcaapi.dto.SymbolResponse;
 import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.MarketSearchResultDTO;
-import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.QuoteType;
 import dev.jtristante.dcaapi.model.InstrumentType;
 import dev.jtristante.dcaapi.model.Symbol;
 import io.micrometer.common.util.StringUtils;
@@ -21,7 +20,7 @@ public interface SymbolMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(source = "symbol", target = "ticker")
-    @Mapping(source = "longname", target = "name")
+    @Mapping(target = "name", expression = "java(mapName(dto.longname(), dto.shortname()))")
     @Mapping(target = "instrumentType", expression = "java(mapQuoteType(dto.quoteType()))")
     Symbol marketSearchResultDtoToSymbol(MarketSearchResultDTO dto);
 
@@ -45,14 +44,15 @@ public interface SymbolMapper {
         return StringUtils.isNotBlank(longname) ? longname : shortname;
     }
 
-    default InstrumentType mapQuoteType(QuoteType quoteType) {
+    default InstrumentType mapQuoteType(String quoteType) {
         if (quoteType == null) {
             return null;
         }
-        return switch (quoteType) {
-            case EQUITY -> InstrumentType.STOCKS;
-            case ETF -> InstrumentType.ETF;
-            case CRYPTOCURRENCY -> InstrumentType.CRYPTO;
+        return switch (quoteType.toUpperCase()) {
+            case "EQUITY" -> InstrumentType.STOCKS;
+            case "ETF" -> InstrumentType.ETF;
+            case "CRYPTOCURRENCY" -> InstrumentType.CRYPTO;
+            default -> null;
         };
     }
 }
