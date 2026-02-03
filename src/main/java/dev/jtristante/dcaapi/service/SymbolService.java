@@ -10,8 +10,8 @@ import dev.jtristante.dcaapi.repository.SymbolRepository;
 import io.micrometer.common.util.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -38,19 +38,33 @@ public class SymbolService {
         this.symbolPersistenceService = symbolPersistenceService;
     }
 
-    public List<SymbolResponse> search(String name, String ticker) {
-        if (StringUtils.isBlank(name)) {
-            throw new IllegalArgumentException("Name parameter is mandatory");
+    public List<SymbolResponse> search(String ticker, String name) {
+        // No parameters provided - return empty list
+        if (StringUtils.isBlank(ticker) && StringUtils.isBlank(name)) {
+            return Collections.emptyList();
         }
 
-        String tickerParam = Optional.ofNullable(ticker).filter(t -> !t.isBlank()).orElse(null);
+        List<Symbol> symbols;
 
-        List<Symbol> symbols = (tickerParam == null)
-                ? symbolRepository.findByNameContainingIgnoreCase(name)
-                : symbolRepository.findByNameContainingIgnoreCaseAndTickerStartingWithIgnoreCase(name, tickerParam);
+        // Determine which parameters are provided
+        boolean hasTicker = StringUtils.isNotBlank(ticker);
+        boolean hasName = StringUtils.isNotBlank(name);
+
+        if (hasTicker && hasName) {
+            // Both provided: AND logic in DB
+            symbols = symbolRepository.findByNameContainingIgnoreCaseAndTickerStartingWithIgnoreCase(name, ticker);
+        } else if (hasTicker) {
+            // Only ticker provided
+            symbols = symbolRepository.findByTickerStartingWithIgnoreCase(ticker);
+        } else {
+            // Only name provided
+            symbols = symbolRepository.findByNameStartingWithIgnoreCase(name);
+        }
 
         if (symbols.isEmpty()) {
-            MarketSearchResponseDTO response = yahooFinanceApi.searchMarket(name);
+            // Yahoo API call: prioritize ticker if available, otherwise use name
+            String searchQuery = hasTicker ? ticker : name;
+            MarketSearchResponseDTO response = yahooFinanceApi.searchMarket(searchQuery);
             List<MarketSearchResultDTO> filteredResults = response.body().stream()
                     .filter(dto -> isSupportedQuoteType(dto.quoteType()))
                     .filter(this::hasValidName)

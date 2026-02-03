@@ -18,21 +18,20 @@ paths:
       security:
         - ApiKeyAuth: [ ]
       parameters:
-        - name: name
-          in: query
-          required: true
-          schema:
-            type: string
-            minLength: 1
-          example: Apple
-          description: Name of the symbol to search for (case-insensitive, contains)
         - name: ticker
           in: query
           required: false
           schema:
             type: string
           example: AAPL
-          description: Ticker of the symbol to search for (case-insensitive, starts with or exact)
+          description: Ticker of the symbol to search for (case-insensitive, starts with). At least one of ticker or name must be provided.
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+          example: Apple
+          description: Name of the symbol to search for (case-insensitive, starts with). At least one of ticker or name must be provided.
       responses:
         '200':
           description: Successful search

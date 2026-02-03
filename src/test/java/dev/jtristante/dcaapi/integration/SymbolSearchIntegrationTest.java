@@ -61,10 +61,10 @@ class SymbolSearchIntegrationTest {
     private static final String API_KEY_VALUE = "test-api-key";
 
     @Test
-    void searchSymbols_byName_shouldReturnMatchingSymbols() throws Exception {
+    void searchSymbols_byTicker_shouldReturnMatchingSymbols() throws Exception {
         mockMvc.perform(get("/api/v1/symbols")
                         .header(API_KEY_HEADER, API_KEY_VALUE)
-                        .param("name", "bit"))
+                        .param("ticker", "BTC"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].ticker").value("BTC-EUR"))
@@ -72,28 +72,40 @@ class SymbolSearchIntegrationTest {
     }
 
     @Test
-    void searchSymbols_byNameAndTicker_shouldReturnMatchingSymbols() throws Exception {
+    void searchSymbols_byName_shouldReturnMatchingSymbols() throws Exception {
+        mockMvc.perform(get("/api/v1/symbols")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .param("name", "Bitcoin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].ticker").value("BTC-EUR"))
+                .andExpect(jsonPath("$[0].name").value("Bitcoin Euro"));
+    }
+
+    @Test
+    void searchSymbols_byTickerAndName_shouldReturnMatchingSymbols() throws Exception {
 
         mockMvc.perform(get("/api/v1/symbols")
                         .header(API_KEY_HEADER, API_KEY_VALUE)
-                        .param("name", "Euro")
-                        .param("ticker", "ETH"))
+                        .param("ticker", "ETH")
+                        .param("name", "Euro"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].ticker").value("ETH-EUR"));
     }
 
     @Test
-    void searchSymbols_missingName_shouldReturnBadRequest() throws Exception {
+    void searchSymbols_noParameters_shouldReturnEmptyList() throws Exception {
         mockMvc.perform(get("/api/v1/symbols")
                         .header(API_KEY_HEADER, API_KEY_VALUE))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test
     void searchSymbols_unauthorized_shouldReturnUnauthorized() throws Exception {
         mockMvc.perform(get("/api/v1/symbols")
-                        .param("name", "bit"))
+                        .param("ticker", "BTC"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -108,7 +120,7 @@ class SymbolSearchIntegrationTest {
         // Call endpoint - this should trigger YahooFinance API call and save to DB
         mockMvc.perform(get("/api/v1/symbols")
                         .header(API_KEY_HEADER, API_KEY_VALUE)
-                        .param("name", "test"))
+                        .param("ticker", "TEST"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[*].ticker").value(org.hamcrest.Matchers.hasItems("TEST-BTC-USD", "TEST-MSFT")));
@@ -141,7 +153,7 @@ class SymbolSearchIntegrationTest {
         // Call endpoint - mock returns symbol with no name
         mockMvc.perform(get("/api/v1/symbols")
                         .header(API_KEY_HEADER, API_KEY_VALUE)
-                        .param("name", "noname"))
+                        .param("ticker", "noname"))
                 .andExpect(status().isOk());
 
         // Verify the symbol with no name was NOT saved to DB
@@ -167,7 +179,7 @@ class SymbolSearchIntegrationTest {
         // Call endpoint - mock returns unsupported quote types
         mockMvc.perform(get("/api/v1/symbols")
                         .header(API_KEY_HEADER, API_KEY_VALUE)
-                        .param("name", "unsupported"))
+                        .param("ticker", "unsupported"))
                 .andExpect(status().isOk());
 
         // Verify mutual fund (VTSMX) and future (GC=F) were NOT saved to DB
