@@ -29,13 +29,14 @@
     <properties>
         <java.version>25</java.version>
         <org.mapstruct.version>1.6.3</org.mapstruct.version>
-        <jacoco.version>0.8.11</jacoco.version>
+        <jacoco.version>0.8.14</jacoco.version>
         <sonar.organization>jtristante</sonar.organization>
         <sonar.projectKey>dca-api</sonar.projectKey>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.java.source>25</sonar.java.source>
         <sonar.java.target>25</sonar.java.target>
-        <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
         <sonar.coverage.exclusions>**/dto/**,**/model/**,**/config/**,**/*Test.java</sonar.coverage.exclusions>
     </properties>
     <dependencies>
