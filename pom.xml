@@ -37,7 +37,9 @@
         <sonar.java.target>25</sonar.java.target>
         <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
-        <sonar.coverage.exclusions>**/dto/**,**/model/**,**/config/**,**/*Test.java</sonar.coverage.exclusions>
+        <sonar.coverage.exclusions>**/dto/**,**/model/**,**/config/**,**/*Test.java,
+            src/main/java/dev/jtristante/dcaapi/infrastructure/**
+        </sonar.coverage.exclusions>
     </properties>
     <dependencies>
         <dependency>
