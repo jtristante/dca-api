@@ -106,7 +106,7 @@ class SymbolServiceTest {
             List<SymbolResponse> result = service.search("BTC", null);
 
             assertThat(result).hasSize(1);
-            assertThat(result.get(0).getTicker()).isEqualTo("BTC");
+            assertThat(result.getFirst().getTicker()).isEqualTo("BTC");
         }
 
         @Test
@@ -236,20 +236,7 @@ class SymbolServiceTest {
     }
 
     private MarketSearchResultDTO createMockMarketResult(String symbol, String shortname, String quoteType) {
-        return new MarketSearchResultDTO(
-                shortname,
-                quoteType,
-                symbol,
-                null,
-                1.0,
-                "Stock",
-                null,
-                "US",
-                null,
-                null,
-                null,
-                null
-        );
+        return MarketSearchResultDTO.build(symbol, shortname, quoteType);
     }
 
     private MarketSearchResponseDTO createMockYahooResponse(MarketSearchResultDTO... results) {

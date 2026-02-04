@@ -78,14 +78,14 @@ class SymbolPersistenceServiceTest {
                     createMockSymbol("NONAME1", null, "ETF")
             );
             when(symbolMapper.marketSearchResultDtoListToSymbolList(dtos)).thenReturn(mappedSymbols);
-            when(symbolRepository.saveAll(any())).thenReturn(List.of(mappedSymbols.get(0)));
+            when(symbolRepository.saveAll(any())).thenReturn(List.of(mappedSymbols.getFirst()));
 
             service.saveFromMarketSearchResults(dtos);
 
             verify(symbolRepository).saveAll(symbolsCaptor.capture());
             List<Symbol> savedSymbols = symbolsCaptor.getValue();
             assertThat(savedSymbols).hasSize(1);
-            assertThat(savedSymbols.get(0).getTicker()).isEqualTo("VALID1");
+            assertThat(savedSymbols.getFirst().getTicker()).isEqualTo("VALID1");
         }
 
         @Test
@@ -101,7 +101,7 @@ class SymbolPersistenceServiceTest {
                     createMockSymbol("NONAME1", "", "ETF")
             );
             when(symbolMapper.marketSearchResultDtoListToSymbolList(dtos)).thenReturn(mappedSymbols);
-            when(symbolRepository.saveAll(any())).thenReturn(List.of(mappedSymbols.get(0)));
+            when(symbolRepository.saveAll(any())).thenReturn(List.of(mappedSymbols.getFirst()));
 
             service.saveFromMarketSearchResults(dtos);
 
@@ -177,7 +177,7 @@ class SymbolPersistenceServiceTest {
             List<Symbol> result = service.saveFromMarketSearchResults(dtos);
 
             assertThat(result).hasSize(1);
-            assertThat(result.get(0).getTicker()).isEqualTo("BTC");
+            assertThat(result.getFirst().getTicker()).isEqualTo("BTC");
         }
 
         @Test
@@ -198,7 +198,7 @@ class SymbolPersistenceServiceTest {
             );
             when(symbolMapper.marketSearchResultDtoListToSymbolList(dtos)).thenReturn(mappedSymbols);
             when(symbolRepository.saveAll(any())).thenReturn(List.of(
-                    mappedSymbols.get(0), mappedSymbols.get(1), mappedSymbols.get(3)
+                    mappedSymbols.getFirst(), mappedSymbols.get(1), mappedSymbols.get(3)
             ));
 
             service.saveFromMarketSearchResults(dtos);
@@ -212,20 +212,7 @@ class SymbolPersistenceServiceTest {
     }
 
     private MarketSearchResultDTO createMockMarketResult(String symbol, String shortname, String quoteType) {
-        return new MarketSearchResultDTO(
-                shortname,
-                quoteType,
-                symbol,
-                null,
-                1.0,
-                "Stock",
-                null,
-                "US",
-                null,
-                null,
-                null,
-                null
-        );
+        return MarketSearchResultDTO.build(symbol, shortname, quoteType);
     }
 
     private Symbol createMockSymbol(String ticker, String name, String instrumentType) {

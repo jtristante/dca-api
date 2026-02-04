@@ -52,14 +52,14 @@ public final class MockPriceData {
 
     public static StockHistoryDTO createBar(String date, double closePrice) {
         LocalDate localDate = LocalDate.parse(date);
-        return new StockHistoryDTO(
-                date,
-                localDate.toEpochDay() * 86400,
-                closePrice,
-                closePrice + 1000,
-                closePrice - 1000,
-                closePrice,
-                50000000L
-        );
+        return StockHistoryDTO.builder()
+                .timestamp(date)
+                .timestampUnix(localDate.toEpochDay() * 86400)
+                .open(closePrice)
+                .high(closePrice + 1000)
+                .low(closePrice - 1000)
+                .close(closePrice)
+                .volume(50000000L)
+                .build();
     }
 }
