@@ -61,9 +61,9 @@ jobs:
           echo "Code Smells: $CODE_SMELLS, Bugs: $BUGS, Vulnerabilities: $VULNERABILITIES"
 
           # Build comment Markdown
-          COMMENT="❌ **Issues (MINOR,MAJOR,CRITICAL) detected in this PR!** 
+          COMMENT="## ❌ **Issues (MINOR,MAJOR,CRITICAL) detected in this PR!** 
           ---
-          ## SonarCloud Report for this PR
+          ### SonarCloud Report for this PR
 
           | Issue Type | Total |
           |------------|-------|
@@ -76,9 +76,10 @@ jobs:
 
           if [ "$CODE_SMELLS" -gt 0 ] || [ "$BUGS" -gt 0 ] || [ "$VULNERABILITIES" -gt 0 ]; then
             echo "❌ Build failed due to new Issues!"
-            gh pr comment $PR_NUMBER -b "$COMMENT" --create-if-none
+            gh pr comment $PR_NUMBER -b "$COMMENT" --edit-last --create-if-none
             exit 1
           else
             echo "✅ No new Issues"
+            gh pr comment $PR_NUMBER -b "## ✅ **No new issues in this PR.** "
           fi
 
