@@ -1,7 +1,12 @@
 package dev.jtristante.dcaapi.testdata;
 
+import dev.jtristante.dcaapi.dto.OhlcvDataDTO;
 import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.StockHistoryDTO;
+import dev.jtristante.dcaapi.model.OhlcvData;
+import dev.jtristante.dcaapi.model.OhlcvDataId;
+import dev.jtristante.dcaapi.model.Symbol;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -61,5 +66,121 @@ public final class MockPriceData {
                 .close(closePrice)
                 .volume(50000000L)
                 .build();
+    }
+
+    public static List<OhlcvDataDTO> risingPricesOhlcv() {
+        return List.of(
+                createOhlcvDataDTO("2024-01-31", 42500.0),
+                createOhlcvDataDTO("2024-02-29", 52500.0),
+                createOhlcvDataDTO("2024-03-31", 61500.0)
+        );
+    }
+
+    public static List<OhlcvDataDTO> fallingPricesOhlcv() {
+        return List.of(
+                createOhlcvDataDTO("2024-01-31", 60000.0),
+                createOhlcvDataDTO("2024-02-29", 40000.0)
+        );
+    }
+
+    public static List<OhlcvDataDTO> appreciationPricesOhlcv() {
+        return List.of(
+                createOhlcvDataDTO("2024-03-31", 40000.0),
+                createOhlcvDataDTO("2024-06-30", 60000.0)
+        );
+    }
+
+    public static List<OhlcvDataDTO> mixedPricesOhlcv() {
+        return List.of(
+                createOhlcvDataDTO("2024-01-15", 40000.0),
+                createOhlcvDataDTO("2024-02-15", 42000.0),
+                createOhlcvDataDTO("2024-03-15", 45000.0),
+                createOhlcvDataDTO("2024-04-15", 50000.0),
+                createOhlcvDataDTO("2024-05-15", 55000.0)
+        );
+    }
+
+    public static List<OhlcvDataDTO> singlePurchasePricesOhlcv() {
+        return List.of(
+                createOhlcvDataDTO("2024-01-15", 40000.0),
+                createOhlcvDataDTO("2024-03-15", 45000.0),
+                createOhlcvDataDTO("2024-04-15", 50000.0)
+        );
+    }
+
+    public static List<OhlcvDataDTO> emptyPricesOhlcv() {
+        return List.of();
+    }
+
+    private static OhlcvDataDTO createOhlcvDataDTO(String date, double closePrice) {
+        LocalDate localDate = LocalDate.parse(date);
+        return OhlcvDataDTO.builder()
+                .date(localDate)
+                .open(BigDecimal.valueOf(closePrice))
+                .high(BigDecimal.valueOf(closePrice + 1000))
+                .low(BigDecimal.valueOf(closePrice - 1000))
+                .close(BigDecimal.valueOf(closePrice))
+                .volume(50000000L)
+                .dividend(BigDecimal.ZERO)
+                .build();
+    }
+
+    public static List<OhlcvData> risingPricesOhlcvEntity(Symbol symbol) {
+        return List.of(
+                createOhlcvData(symbol, "2024-01-31", 42500.0),
+                createOhlcvData(symbol, "2024-02-29", 52500.0),
+                createOhlcvData(symbol, "2024-03-31", 61500.0)
+        );
+    }
+
+    public static List<OhlcvData> fallingPricesOhlcvEntity(Symbol symbol) {
+        return List.of(
+                createOhlcvData(symbol, "2024-01-31", 60000.0),
+                createOhlcvData(symbol, "2024-02-29", 40000.0)
+        );
+    }
+
+    public static List<OhlcvData> appreciationPricesOhlcvEntity(Symbol symbol) {
+        return List.of(
+                createOhlcvData(symbol, "2024-03-31", 40000.0),
+                createOhlcvData(symbol, "2024-06-30", 60000.0)
+        );
+    }
+
+    public static List<OhlcvData> mixedPricesOhlcvEntity(Symbol symbol) {
+        return List.of(
+                createOhlcvData(symbol, "2024-01-15", 40000.0),
+                createOhlcvData(symbol, "2024-02-15", 42000.0),
+                createOhlcvData(symbol, "2024-03-15", 45000.0),
+                createOhlcvData(symbol, "2024-04-15", 50000.0),
+                createOhlcvData(symbol, "2024-05-15", 55000.0)
+        );
+    }
+
+    public static List<OhlcvData> singlePurchasePricesOhlcvEntity(Symbol symbol) {
+        return List.of(
+                createOhlcvData(symbol, "2024-01-15", 40000.0),
+                createOhlcvData(symbol, "2024-03-15", 45000.0),
+                createOhlcvData(symbol, "2024-04-15", 50000.0)
+        );
+    }
+
+    public static List<OhlcvData> emptyPricesOhlcvEntity() {
+        return List.of();
+    }
+
+    private static OhlcvData createOhlcvData(Symbol symbol, String date, double closePrice) {
+        LocalDate localDate = LocalDate.parse(date);
+        OhlcvDataId id = new OhlcvDataId(symbol.getId(), localDate);
+        OhlcvData ohlcv = new OhlcvData();
+        ohlcv.setId(id);
+        ohlcv.setSymbol(symbol);
+        ohlcv.setOpen(BigDecimal.valueOf(closePrice));
+        ohlcv.setHigh(BigDecimal.valueOf(closePrice + 1000));
+        ohlcv.setLow(BigDecimal.valueOf(closePrice - 1000));
+        ohlcv.setClose(BigDecimal.valueOf(closePrice));
+        ohlcv.setVolume(50000000L);
+        ohlcv.setDividend(BigDecimal.ZERO);
+        return ohlcv;
     }
 }

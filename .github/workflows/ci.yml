@@ -1,7 +1,8 @@
 name: CI - Java Maven Tests with SonarCloud
+permissions:
+  contents: read
+  pull-requests: write
 on:
-  push:
-    branches: [ main, master, develop , 'feature/**' ]
   pull_request:
     branches: [ main, master, develop ]
 jobs:
@@ -12,18 +13,73 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Required for SonarCloud
+
       - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           java-version: '25'
           distribution: 'temurin'
           cache: maven
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Run tests and SonarCloud scan
+        id: sonar_scan
         run: |
+          # Ejecuta SonarCloud y espera Quality Gate
           ./mvnw -B clean verify sonar:sonar \
             -Dsonar.projectKey=jtristante_dca-api \
             -Dsonar.organization=jtristante \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.token=${SONAR_TOKEN}
+            -Dsonar.qualitygate.wait=true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          
+      - name: Check SonarCloud Code Smells via API
+        if: success()
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SONAR_ORG=jtristante
+          SONAR_PROJECT_KEY=jtristante_dca-api 
+          PR_NUMBER=${{ github.event.pull_request.number }}
+
+          echo "Fetching Code Smells from SonarCloud for PR \#$PR_NUMBER..."
+          get_total_issues() {
+            TYPE=$1
+            curl -s -u "$SONAR_TOKEN": \
+            "https://sonarcloud.io/api/issues/search?organization=$SONAR_ORG&projects=$SONAR_PROJECT_KEY&types=$TYPE&resolved=false&severities=MINOR,MAJOR,CRITICAL&pullRequest=$PR_NUMBER&ps=500" \
+             | jq '.total // 0'
+          }
+         
+          CODE_SMELLS=$(get_total_issues "CODE_SMELL")
+          BUGS=$(get_total_issues "BUG")
+          VULNERABILITIES=$(get_total_issues "VULNERABILITY")
+
+          echo "Code Smells: $CODE_SMELLS, Bugs: $BUGS, Vulnerabilities: $VULNERABILITIES"
+
+          # Build comment Markdown
+          COMMENT="## ❌ **Issues detected in this PR!** 
+          
+          ### SonarCloud Report for this PR
+
+          | Issue Type | Total |
+          |------------|-------|
+          | 🚽 Code Smells | **$CODE_SMELLS** |
+          | 🐞 Bugs        | **$BUGS** |
+          | 🛡️ Vulnerabilities | **$VULNERABILITIES** |
+
+          [View full report](https://sonarcloud.io/project/issues?id=$SONAR_PROJECT_KEY&pullRequest=$PR_NUMBER)
+          "
+
+          if [ "$CODE_SMELLS" -gt 0 ] || [ "$BUGS" -gt 0 ] || [ "$VULNERABILITIES" -gt 0 ]; then
+            echo "❌ Build failed due to new Issues!"
+            gh pr comment $PR_NUMBER -b "$COMMENT" --edit-last --create-if-none
+            exit 1
+          else
+            echo "✅ No new Issues"
+            gh pr comment $PR_NUMBER -b "## ✅ **No new issues in this PR.** " --edit-last --create-if-none
+          fi
+

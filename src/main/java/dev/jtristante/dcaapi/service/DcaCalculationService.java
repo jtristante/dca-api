@@ -2,10 +2,7 @@ package dev.jtristante.dcaapi.service;
 
 import dev.jtristante.dcaapi.dto.DcaRequest;
 import dev.jtristante.dcaapi.dto.DcaResponse;
-import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.api.YahooFinanceApi;
-import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.GetStocksHistoryResponseDTO;
-import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.IntervalType;
-import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.StockHistoryDTO;
+import dev.jtristante.dcaapi.dto.OhlcvDataDTO;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -18,34 +15,25 @@ public class DcaCalculationService {
 
     private static final int CALCULATION_SCALE = 10;
 
-    private final YahooFinanceApi yahooFinanceApi;
-
-    public DcaCalculationService(YahooFinanceApi yahooFinanceApi) {
-        this.yahooFinanceApi = yahooFinanceApi;
-    }
-
-    public DcaResponse calculate(DcaRequest request) {
-        IntervalType interval = mapFrequencyToInterval(request.getFrequency());
-        List<StockHistoryDTO> priceData = fetchHistoricalPrices(request.getSymbol(), interval);
-
-        if (isEmptyPriceData(priceData)) {
+    public DcaResponse calculate(DcaRequest request, List<OhlcvDataDTO> ohlcvData) {
+        if (isEmptyPriceData(ohlcvData)) {
             return createEmptyResponse();
         }
 
         LocalDate startDate = request.getStartDate();
         LocalDate endDate = request.getEndDate();
-        BigDecimal currentPrice = getLatestPrice(priceData);
+        BigDecimal currentPrice = getLatestPrice(ohlcvData);
         BigDecimal amount = BigDecimal.valueOf(request.getAmount());
 
         BigDecimal totalInvested = BigDecimal.ZERO;
         BigDecimal totalUnits = BigDecimal.ZERO;
 
-        for (StockHistoryDTO bar : priceData) {
+        for (OhlcvDataDTO bar : ohlcvData) {
             if (!isDateInRange(bar, startDate, endDate)) {
                 continue;
             }
 
-            BigDecimal units = calculateUnitsForPurchase(amount, bar.close());
+            BigDecimal units = calculateUnitsForPurchase(amount, bar.close().doubleValue());
             if (units.compareTo(BigDecimal.ZERO) > 0) {
                 totalInvested = totalInvested.add(amount);
                 totalUnits = totalUnits.add(units);
@@ -64,24 +52,19 @@ public class DcaCalculationService {
         return buildResponse(totalInvested, totalUnits, weightedAveragePrice, currentValue, profit, roiPct);
     }
 
-    private List<StockHistoryDTO> fetchHistoricalPrices(String symbol, IntervalType interval) {
-        GetStocksHistoryResponseDTO response = yahooFinanceApi.getStocksHistory(symbol, interval, null, null);
-        return response.body();
-    }
-
-    private boolean isEmptyPriceData(List<StockHistoryDTO> priceData) {
+    private boolean isEmptyPriceData(List<OhlcvDataDTO> priceData) {
         return priceData == null || priceData.isEmpty();
     }
 
-    private BigDecimal getLatestPrice(List<StockHistoryDTO> priceData) {
-        return BigDecimal.valueOf(priceData.getLast().close());
+    private BigDecimal getLatestPrice(List<OhlcvDataDTO> priceData) {
+        return priceData.getLast().close();
     }
 
-    private LocalDate barToLocalDate(StockHistoryDTO bar) {
-        return LocalDate.ofEpochDay(bar.timestampUnix() / 86400);
+    private LocalDate barToLocalDate(OhlcvDataDTO bar) {
+        return bar.date();
     }
 
-    private boolean isDateInRange(StockHistoryDTO bar, LocalDate startDate, LocalDate endDate) {
+    private boolean isDateInRange(OhlcvDataDTO bar, LocalDate startDate, LocalDate endDate) {
         LocalDate barDate = barToLocalDate(bar);
         return !barDate.isBefore(startDate) && !barDate.isAfter(endDate);
     }
@@ -134,14 +117,6 @@ public class DcaCalculationService {
 
     private Double formatToEightDecimals(BigDecimal value) {
         return value.setScale(8, RoundingMode.HALF_UP).doubleValue();
-    }
-
-    private IntervalType mapFrequencyToInterval(DcaRequest.FrequencyEnum frequency) {
-        return switch (frequency) {
-            case WEEKLY -> IntervalType.W1;
-            case MONTHLY -> IntervalType.MO1;
-            case QUARTERLY -> IntervalType.Q1;
-        };
     }
 
     private DcaResponse createEmptyResponse() {
