@@ -1,5 +1,6 @@
 package dev.jtristante.dcaapi.service;
 
+import dev.jtristante.dcaapi.dto.OhlcvDataDTO;
 import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.api.YahooFinanceApi;
 import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.GetStocksHistoryResponseDTO;
 import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.IntervalType;
@@ -35,18 +36,19 @@ public class OhlcvDataService {
         this.ohlcvDataPersistenceService = ohlcvDataPersistenceService;
     }
 
-    public List<OhlcvData> getOhlcvData(Symbol symbol, LocalDate startDate, LocalDate endDate) {
+    public List<OhlcvDataDTO> getOhlcvData(Symbol symbol, LocalDate startDate, LocalDate endDate) {
         List<OhlcvData> existingData = ohlcvDataRepository.findBySymbolIdAndDateRange(
                 symbol.getId(), startDate, endDate
         );
 
-        if (!existingData.isEmpty()) {
+        if (existingData.isEmpty()) {
+            log.info("No OHLCV data found in DB for symbol: {}. Fetching from Yahoo Finance...", symbol.getTicker());
+            existingData = fetchAndPersistFromYahooFinance(symbol);
+        } else {
             log.info("Found {} OHLCV records in DB for symbol: {}", existingData.size(), symbol.getTicker());
-            return existingData;
         }
 
-        log.info("No OHLCV data found in DB for symbol: {}. Fetching from Yahoo Finance...", symbol.getTicker());
-        return fetchAndPersistFromYahooFinance(symbol);
+        return ohlcvDataMapper.ohlcvDataListToOhlcvDataDTOList(existingData);
     }
 
     private List<OhlcvData> fetchAndPersistFromYahooFinance(Symbol symbol) {
