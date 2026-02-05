@@ -49,14 +49,14 @@ jobs:
           echo "Fetching Code Smells from SonarCloud for PR \#$PR_NUMBER..."
           get_total_issues() {
             TYPE=$1
-            response=$(curl -s -u "$SONAR_TOKEN": \
-            "https://sonarcloud.io/api/issues/search?organization=$SONAR_ORG&projects=$SONAR_PROJECT_KEY&types=$TYPE&resolved=false&severities=MINOR,MAJOR,CRITICAL&pullRequest=$PR_NUMBER&ps=500")
-            total=$(echo "$response" | jq '.total // 0')
+            curl -s -u "$SONAR_TOKEN": \
+            "https://sonarcloud.io/api/issues/search?organization=$SONAR_ORG&projects=$SONAR_PROJECT_KEY&types=$TYPE&resolved=false&severities=MINOR,MAJOR,CRITICAL&pullRequest=$PR_NUMBER&ps=500" \
+             | jq '.total // 0'
           }
          
-          CODE_SMELLS=$(get_total "CODE_SMELL")
-          BUGS=$(get_total "BUG")
-          VULNERABILITIES=$(get_total "VULNERABILITY")
+          CODE_SMELLS=$(get_total_issues "CODE_SMELL")
+          BUGS=$(get_total_issues "BUG")
+          VULNERABILITIES=$(get_total_issues "VULNERABILITY")
 
           echo "Code Smells: $CODE_SMELLS, Bugs: $BUGS, Vulnerabilities: $VULNERABILITIES"
 
