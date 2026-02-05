@@ -61,15 +61,15 @@ jobs:
           echo "Code Smells: $CODE_SMELLS, Bugs: $BUGS, Vulnerabilities: $VULNERABILITIES"
 
           # Build comment Markdown
-          COMMENT="## ❌ **Issues (MINOR,MAJOR,CRITICAL) detected in this PR!** 
-          ---
+          COMMENT="## ❌ **Issues detected in this PR!** 
+          
           ### SonarCloud Report for this PR
 
           | Issue Type | Total |
           |------------|-------|
-          | Code Smells | **$CODE_SMELLS** |
-          | Bugs        | **$BUGS** |
-          | Vulnerabilities | **$VULNERABILITIES** |
+          | 🚽 Code Smells | **$CODE_SMELLS** |
+          | 🐞 Bugs        | **$BUGS** |
+          | 🛡️ Vulnerabilities | **$VULNERABILITIES** |
 
           [View full report](https://sonarcloud.io/project/issues?id=$SONAR_PROJECT_KEY&pullRequest=$PR_NUMBER)
           "
@@ -80,6 +80,6 @@ jobs:
             exit 1
           else
             echo "✅ No new Issues"
-            gh pr comment $PR_NUMBER -b "## ✅ **No new issues in this PR.** "
+            gh pr comment $PR_NUMBER -b "## ✅ **No new issues in this PR.** " --edit-last --create-if-none
           fi
 
