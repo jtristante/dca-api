@@ -41,7 +41,7 @@ public class OhlcvData {
     /**
      * Default constructor for JPA.
      */
-    protected OhlcvData() {
+    public OhlcvData() {
     }
 
     public OhlcvDataId getId() {

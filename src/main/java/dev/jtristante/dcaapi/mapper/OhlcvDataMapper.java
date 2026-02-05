@@ -25,7 +25,7 @@ public interface OhlcvDataMapper {
                 .toList();
     }
 
-    static OhlcvDataId createOhlcvDataId(Symbol symbol, StockHistoryDTO dto) {
+    default OhlcvDataId createOhlcvDataId(Symbol symbol, StockHistoryDTO dto) {
         LocalDate date = LocalDate.ofEpochDay(dto.timestampUnix() / 86400);
         return new OhlcvDataId(symbol.getId(), date);
     }
