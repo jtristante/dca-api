@@ -76,9 +76,9 @@ jobs:
 
           if [ "$CODE_SMELLS" -gt 0 ] || [ "$BUGS" -gt 0 ] || [ "$VULNERABILITIES" -gt 0 ]; then
             echo "❌ Build failed due to new Issues!"
-            gh pr comment "$COMMENT"
+            gh pr comment $PR_NUMBER -b "$COMMENT" --create-if-none
             exit 1
           else
-            echo "✅ No new Code Smells"
+            echo "✅ No new Issues"
           fi
 
