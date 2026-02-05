@@ -39,9 +39,14 @@ public class OhlcvData {
     private BigDecimal dividend = BigDecimal.ZERO;
 
     /**
-     * Default constructor for JPA.
+     * Default constructor required by JPA for entity instantiation.
+     * This constructor intentionally left empty - all field initialization
+     * occurs via setter methods after construction to support proper
+     * @EmbeddedId and relationship mapping setup.
      */
     public OhlcvData() {
+        // Intentionally empty - JPA requires no-arg constructor
+        // Fields set via setters for @EmbeddedId (OhlcvDataId) and @ManyToOne (Symbol) relationships
     }
 
     public OhlcvDataId getId() {

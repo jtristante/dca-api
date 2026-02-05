@@ -165,7 +165,7 @@ public final class MockPriceData {
         );
     }
 
-    public static List<OhlcvData> emptyPricesOhlcvEntity(Symbol symbol) {
+    public static List<OhlcvData> emptyPricesOhlcvEntity() {
         return List.of();
     }
 
