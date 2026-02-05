@@ -32,9 +32,9 @@ jobs:
             -Dsonar.qualitygate.wait=true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-      - name: Check SonarCloud Code Smells via API (only if Quality Gate passed)
-        if: success() # Only executes if the previous step passed
+          
+      - name: Check SonarCloud Code Smells via API
+        if: success()
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
@@ -42,11 +42,10 @@ jobs:
           SONAR_PROJECT_KEY=jtristante_dca-api
 
           echo "Fetching Code Smells from SonarCloud..."
-          response=$(curl -f -s -u "$SONAR_TOKEN": \
-            "https://sonarcloud.io/api/issues/search?organization=jtristante&projects=jtristante_dca-api&types=CODE_SMELL&resolved=false&severities=MINOR,MAJOR,CRITICAL&sinceLeakPeriod=true")
+          response=$(curl -s -u "$SONAR_TOKEN": \
+            "https://sonarcloud.io/api/issues/search?organization=$SONAR_ORG&projects=$SONAR_PROJECT_KEY&types=CODE_SMELL&resolved=false&severities=MINOR,MAJOR,CRITICAL&sinceLeakPeriod=true")
 
-          total=$(echo "$response" | jq '.total')
-
+          total=$(echo "$response" | jq '.total // 0')
           echo "Code Smells found: $total"
 
           if [ "$total" -gt 0 ]; then
@@ -54,3 +53,5 @@ jobs:
             exit 1
           else
             echo "✅ No new Code Smells"
+          fi
+
