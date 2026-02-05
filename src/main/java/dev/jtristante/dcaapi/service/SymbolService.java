@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -39,30 +40,35 @@ public class SymbolService {
     }
 
     public List<SymbolResponse> search(String ticker, String name) {
-        // No parameters provided - return empty list
+        List<Symbol> symbols = findOrSearchSymbols(ticker, name);
+        return symbolMapper.symbolListToSymbolResponseList(symbols);
+    }
+
+    public Optional<Symbol> findOrSearchByTicker(String ticker) {
+        List<Symbol> symbols = findOrSearchSymbols(ticker, null);
+        return symbols.stream()
+                .filter(s -> s.getTicker().equalsIgnoreCase(ticker))
+                .findFirst();
+    }
+
+    private List<Symbol> findOrSearchSymbols(String ticker, String name) {
         if (StringUtils.isBlank(ticker) && StringUtils.isBlank(name)) {
             return Collections.emptyList();
         }
 
         List<Symbol> symbols;
-
-        // Determine which parameters are provided
         boolean hasTicker = StringUtils.isNotBlank(ticker);
         boolean hasName = StringUtils.isNotBlank(name);
 
         if (hasTicker && hasName) {
-            // Both provided: AND logic in DB
             symbols = symbolRepository.findByNameContainingIgnoreCaseAndTickerStartingWithIgnoreCase(name, ticker);
         } else if (hasTicker) {
-            // Only ticker provided
             symbols = symbolRepository.findByTickerStartingWithIgnoreCase(ticker);
         } else {
-            // Only name provided
             symbols = symbolRepository.findByNameStartingWithIgnoreCase(name);
         }
 
         if (symbols.isEmpty()) {
-            // Yahoo API call: prioritize ticker if available, otherwise use name
             String searchQuery = hasTicker ? ticker : name;
             MarketSearchResponseDTO response = yahooFinanceApi.searchMarket(searchQuery);
             List<MarketSearchResultDTO> filteredResults = response.body().stream()
@@ -75,7 +81,11 @@ public class SymbolService {
             }
         }
 
-        return symbolMapper.symbolListToSymbolResponseList(symbols);
+        return symbols;
+    }
+
+    public Optional<Symbol> findByTicker(String ticker) {
+        return symbolRepository.findByTickerIgnoreCase(ticker);
     }
 
     private boolean isSupportedQuoteType(String quoteType) {
