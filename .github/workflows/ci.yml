@@ -37,6 +37,7 @@ jobs:
         if: success()
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           SONAR_ORG=jtristante
           SONAR_PROJECT_KEY=jtristante_dca-api 
@@ -51,6 +52,15 @@ jobs:
 
           if [ "$total" -gt 0 ]; then
             echo "❌ Build failed due to new Code Smells!"
+            gh pr comment $PR_NUMBER --body "
+            # ❌ **SonarCloud Issues**  
+            ---
+            | Type | Total |
+            |------|-------|
+            | Code Smells | **$total** |
+
+            [View full report](https://sonarcloud.io/project/issues?id=jtristante_dca-api&pullRequest=$PR_NUMBER)
+            "
             exit 1
           else
             echo "✅ No new Code Smells"
