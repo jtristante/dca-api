@@ -59,7 +59,7 @@ public class DcaCalculationService {
         BigDecimal weightedAveragePrice = calculateWeightedAveragePrice(totalInvested, totalUnits);
         BigDecimal currentValue = calculateCurrentValue(totalUnits, currentPrice);
         BigDecimal profit = calculateProfit(currentValue, totalInvested);
-        double roiPct = calculateRoiPercentage(profit, totalInvested);
+        Double roiPct = calculateRoiPercentage(profit, totalInvested);
 
         return buildResponse(totalInvested, totalUnits, weightedAveragePrice, currentValue, profit, roiPct);
     }
@@ -109,23 +109,23 @@ public class DcaCalculationService {
         return currentValue.subtract(totalInvested);
     }
 
-    private double calculateRoiPercentage(BigDecimal profit, BigDecimal totalInvested) {
+    private Double calculateRoiPercentage(BigDecimal profit, BigDecimal totalInvested) {
         if (totalInvested.compareTo(BigDecimal.ZERO) <= 0) {
             return 0.0;
         }
-        return profit.divide(totalInvested, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue();
+        return profit.divide(totalInvested, RoundingMode.HALF_UP).setScale(3, RoundingMode.HALF_UP).doubleValue();
     }
 
     private DcaResponse buildResponse(BigDecimal totalInvested, BigDecimal totalUnits,
                                       BigDecimal weightedAveragePrice, BigDecimal currentValue,
-                                      BigDecimal profit, double roiPct) {
+                                      BigDecimal profit, Double roiPct) {
         return new DcaResponse()
                 .totalInvested(formatToTwoDecimals(totalInvested))
                 .units(formatToEightDecimals(totalUnits))
                 .weightedAveragePrice(formatToTwoDecimals(weightedAveragePrice))
                 .currentValue(formatToTwoDecimals(currentValue))
                 .profit(formatToTwoDecimals(profit))
-                .roiPct(roiPct);
+                .roi(roiPct);
     }
 
     private Double formatToTwoDecimals(BigDecimal value) {
@@ -151,6 +151,6 @@ public class DcaCalculationService {
                 .weightedAveragePrice(0.0)
                 .currentValue(0.0)
                 .profit(0.0)
-                .roiPct(0.0);
+                .roi(0.0);
     }
 }

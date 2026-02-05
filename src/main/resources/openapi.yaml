@@ -177,11 +177,11 @@ components:
           format: double
           description: Absolute profit or loss (current_value - total_invested)
           example: 12900
-        roi_pct:
+        roi:
           type: number
           format: double
-          description: Return on investment as a percentage
-          example: 82.7
+          description: Return on investment as a decimal (e.g., 0.082 = 8.2%)
+          example: 0.082
     SymbolResponse:
       type: object
       required:

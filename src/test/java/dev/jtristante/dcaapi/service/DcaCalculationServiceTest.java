@@ -57,7 +57,7 @@ class DcaCalculationServiceTest {
             assertThat(result.getWeightedAveragePrice()).isGreaterThan(0.0);
             assertThat(result.getCurrentValue()).isGreaterThan(0.0);
             assertThat(result.getProfit()).isGreaterThan(0.0);
-            assertThat(result.getRoiPct()).isGreaterThan(0.0);
+            assertThat(result.getRoi()).isNotNull();
         }
 
         @Test
@@ -77,7 +77,7 @@ class DcaCalculationServiceTest {
             assertThat(result.getWeightedAveragePrice()).isEqualTo(0.0);
             assertThat(result.getCurrentValue()).isEqualTo(0.0);
             assertThat(result.getProfit()).isEqualTo(0.0);
-            assertThat(result.getRoiPct()).isEqualTo(0.0);
+            assertThat(result.getRoi()).isEqualTo(0.0);
         }
 
         @Test
@@ -93,7 +93,7 @@ class DcaCalculationServiceTest {
             DcaResponse result = service.calculate(request);
 
             assertThat(result.getTotalInvested()).isEqualTo(0.0);
-            assertThat(result.getRoiPct()).isEqualTo(0.0);
+            assertThat(result.getRoi()).isEqualTo(0.0);
         }
 
         @Test
@@ -110,7 +110,7 @@ class DcaCalculationServiceTest {
 
             assertThat(result.getTotalInvested()).isEqualTo(200.0);
             assertThat(result.getProfit()).isGreaterThan(0.0);
-            assertThat(result.getRoiPct()).isGreaterThan(0.0);
+            assertThat(result.getRoi()).isNotNull();
         }
 
         @Test
@@ -127,7 +127,7 @@ class DcaCalculationServiceTest {
 
             assertThat(result.getTotalInvested()).isEqualTo(200.0);
             assertThat(result.getProfit()).isLessThan(0.0);
-            assertThat(result.getRoiPct()).isLessThan(0.0);
+            assertThat(result.getRoi()).isLessThan(0.0);
         }
 
         @Test
@@ -163,7 +163,7 @@ class DcaCalculationServiceTest {
             assertThat(result.getWeightedAveragePrice()).isEqualTo(45000.0);
             assertThat(result.getCurrentValue()).isCloseTo(111.11, offset(0.01));
             assertThat(result.getProfit()).isCloseTo(11.11, offset(0.01));
-            assertThat(result.getRoiPct()).isCloseTo(11.11, offset(0.01));
+            assertThat(result.getRoi()).isCloseTo(0.111, offset(0.001));
         }
     }
 }

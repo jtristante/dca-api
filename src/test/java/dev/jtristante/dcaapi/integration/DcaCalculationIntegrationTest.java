@@ -73,7 +73,7 @@ class DcaCalculationIntegrationTest {
                 .andExpect(jsonPath("$.weighted_average_price").isNumber())
                 .andExpect(jsonPath("$.current_value").isNumber())
                 .andExpect(jsonPath("$.profit").isNumber())
-                .andExpect(jsonPath("$.roi_pct").isNumber());
+                .andExpect(jsonPath("$.roi").isNumber());
     }
 
     @Test
