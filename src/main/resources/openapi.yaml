@@ -139,7 +139,7 @@ components:
           example: 100
         frequency:
           type: string
-          enum: [ daily, weekly, monthly ]
+          enum: [ weekly, monthly, quarterly ]
           example: weekly
         start_date:
           type: string
@@ -155,19 +155,33 @@ components:
         total_invested:
           type: number
           format: double
+          description: Total amount invested across all periods
           example: 15600
         units:
           type: number
           format: double
+          description: Total units accumulated through DCA purchases
           example: 0.342
-        final_value:
+        weighted_average_price:
           type: number
           format: double
+          description: Weighted average purchase price per unit
+          example: 45230.50
+        current_value:
+          type: number
+          format: double
+          description: Current value of accumulated units based on latest price
           example: 28500
-        roi_pct:
+        profit:
           type: number
           format: double
-          example: 82.7
+          description: Absolute profit or loss (current_value - total_invested)
+          example: 12900
+        roi:
+          type: number
+          format: double
+          description: Return on investment as a decimal (e.g., 0.082 = 8.2%)
+          example: 0.082
     SymbolResponse:
       type: object
       required:

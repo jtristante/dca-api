@@ -5,6 +5,7 @@ import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.GetStocks
 import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.IntervalType;
 import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.MarketSearchResponseDTO;
 import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.MarketSearchResultDTO;
+import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.StockHistoryDTO;
 import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.metadata.MarketSearchMetadataDTO;
 import dev.jtristante.dcaapi.infrastructure.rapidapi.yahoo_finance.dto.metadata.StockHistoryMetadataDTO;
 import jakarta.validation.constraints.NotNull;
@@ -15,20 +16,25 @@ import java.util.List;
 
 @Component
 @Profile("test")
-public class TestYahooFinanceClient implements YahooFinanceApi {
+public class FakeYahooFinanceClient implements YahooFinanceApi {
 
     @Override
     public GetStocksHistoryResponseDTO getStocksHistory(@NotNull String symbol, @NotNull IntervalType interval, Integer limit, Boolean dividend) {
         return new GetStocksHistoryResponseDTO(
-                new StockHistoryMetadataDTO("v1.0", 200, symbol, interval.getCode(), dividend),
-                List.of()
+                new StockHistoryMetadataDTO("v2.0", 200, symbol, interval.getCode(), dividend),
+                List.of(
+                        new StockHistoryDTO("2026-01-12", 1768194000, 259.16, 261.82, 254.93, 255.53, 48509020L),
+                        new StockHistoryDTO("2026-01-19", 1768798800, 252.73, 254.79, 243.42, 248.04, 54076600L),
+                        new StockHistoryDTO("2026-01-26", 1769403600, 251.48, 261.95, 249.8, 259.48, 61320340L),
+                        new StockHistoryDTO("2026-02-02", 1770008400, 260.03, 278.95, 259.205, 276.49, 76239815L)
+                )
         );
     }
 
     @Override
     public MarketSearchResponseDTO searchMarket(@NotNull String search) {
         String searchLower = search.toLowerCase();
-        
+
         // Return specific test data based on search term
         if (searchLower.contains("noname") || searchLower.contains("1open")) {
             // Test case: symbol with no name should be filtered out
