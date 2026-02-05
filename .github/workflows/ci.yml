@@ -42,7 +42,7 @@ jobs:
           SONAR_PROJECT_KEY=jtristante_dca-api 
           PR_NUMBER=${{ github.event.pull_request.number }}
 
-          echo "Fetching Code Smells from SonarCloud for PR #$PR_NUMBER..."
+          echo "Fetching Code Smells from SonarCloud for PR \#$PR_NUMBER..."
           response=$(curl -s -u "$SONAR_TOKEN": \
             "https://sonarcloud.io/api/issues/search?organization=$SONAR_ORG&projects=$SONAR_PROJECT_KEY&types=CODE_SMELL&resolved=false&severities=MINOR,MAJOR,CRITICAL&sinceLeakPeriod=true&pullRequest=$PR_NUMBER&ps=500"")
 
