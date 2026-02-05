@@ -34,13 +34,15 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: Check SonarCloud Code Smells via API (only if Quality Gate passed)
-        if: success()  # Only executes if the previous step passed
+        if: success() # Only executes if the previous step passed
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
         run: |
           SONAR_ORG=jtristante
           SONAR_PROJECT_KEY=jtristante_dca-api
 
           echo "Fetching Code Smells from SonarCloud..."
-          total=$(curl -s -u ${{ secrets.SONAR_TOKEN }}: \
+          total=$(curl -s -u "$SONAR_TOKEN": \
             "https://sonarcloud.io/api/issues/search?organization=$SONAR_ORG&projects=$SONAR_PROJECT_KEY&types=CODE_SMELL&resolved=false&severities=MINOR,MAJOR,CRITICAL&sinceLeakPeriod=true" \
             | jq '.total')
 
@@ -51,5 +53,3 @@ jobs:
             exit 1
           else
             echo "✅ No new Code Smells"
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
