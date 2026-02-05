@@ -43,7 +43,7 @@ jobs:
 
           echo "Fetching Code Smells from SonarCloud..."
           response=$(curl -f -s -u "$SONAR_TOKEN": \
-            "https://sonarcloud.io/api/issues/search?organization=$SONAR_ORG&projects=$SONAR_PROJECT_KEY&types=CODE_SMELL&resolved=false&severities=MINOR,MAJOR,CRITICAL&sinceLeakPeriod=true")
+            "https://sonarcloud.io/api/issues/search?organization=jtristante&projects=jtristante_dca-api&types=CODE_SMELL&resolved=false&severities=MINOR,MAJOR,CRITICAL&sinceLeakPeriod=true")
 
           total=$(echo "$response" | jq '.total')
 
