@@ -47,23 +47,36 @@ jobs:
           PR_NUMBER=${{ github.event.pull_request.number }}
 
           echo "Fetching Code Smells from SonarCloud for PR \#$PR_NUMBER..."
-          response=$(curl -s -u "$SONAR_TOKEN": \
-            "https://sonarcloud.io/api/issues/search?organization=$SONAR_ORG&projects=$SONAR_PROJECT_KEY&types=CODE_SMELL&resolved=false&severities=MINOR,MAJOR,CRITICAL&pullRequest=$PR_NUMBER&ps=500")
+          get_total_issues() {
+            TYPE=$1
+            response=$(curl -s -u "$SONAR_TOKEN": \
+            "https://sonarcloud.io/api/issues/search?organization=$SONAR_ORG&projects=$SONAR_PROJECT_KEY&types=$TYPE&resolved=false&severities=MINOR,MAJOR,CRITICAL&pullRequest=$PR_NUMBER&ps=500")
+            total=$(echo "$response" | jq '.total // 0')
+          }
+         
+          CODE_SMELLS=$(get_total "CODE_SMELL")
+          BUGS=$(get_total "BUG")
+          VULNERABILITIES=$(get_total "VULNERABILITY")
 
-          total=$(echo "$response" | jq '.total // 0')
-          echo "Code Smells found: $total"
+          echo "Code Smells: $CODE_SMELLS, Bugs: $BUGS, Vulnerabilities: $VULNERABILITIES"
 
-          if [ "$total" -gt 0 ]; then
-            echo "❌ Build failed due to new Code Smells!"
-            gh pr comment $PR_NUMBER --body "
-            # ❌ **SonarCloud Issues**  
-            ---
-            | Type | Total |
-            |------|-------|
-            | Code Smells | **$total** |
+          # Build comment Markdown
+          COMMENT="❌ **Issues (MINOR,MAJOR,CRITICAL) detected in this PR!** 
+          ---
+          ## SonarCloud Report for this PR
 
-            [View full report](https://sonarcloud.io/project/issues?id=jtristante_dca-api&pullRequest=$PR_NUMBER)
-            "
+          | Issue Type | Total |
+          |------------|-------|
+          | Code Smells | **$CODE_SMELLS** |
+          | Bugs        | **$BUGS** |
+          | Vulnerabilities | **$VULNERABILITIES** |
+
+          [View full report](https://sonarcloud.io/project/issues?id=$SONAR_PROJECT_KEY&pullRequest=$PR_NUMBER)
+          "
+
+          if [ "$CODE_SMELLS" -gt 0 ] || [ "$BUGS" -gt 0 ] || [ "$VULNERABILITIES" -gt 0 ]; then
+            echo "❌ Build failed due to new Issues!"
+            gh pr comment "$COMMENT"
             exit 1
           else
             echo "✅ No new Code Smells"
