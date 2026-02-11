@@ -8,10 +8,16 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.Month;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class DcaCalculationService {
+
 
     private static final int CALCULATION_SCALE = 10;
 
@@ -19,6 +25,9 @@ public class DcaCalculationService {
         if (isEmptyPriceData(ohlcvData)) {
             return createEmptyResponse();
         }
+
+        // Filter data by frequency before processing
+        List<OhlcvDataDTO> filteredData = filterByFrequency(ohlcvData, request.getFrequency());
 
         LocalDate startDate = request.getStartDate();
         LocalDate endDate = request.getEndDate();
@@ -28,7 +37,7 @@ public class DcaCalculationService {
         BigDecimal totalInvested = BigDecimal.ZERO;
         BigDecimal totalUnits = BigDecimal.ZERO;
 
-        for (OhlcvDataDTO bar : ohlcvData) {
+        for (OhlcvDataDTO bar : filteredData) {
             if (!isDateInRange(bar, startDate, endDate)) {
                 continue;
             }
@@ -117,6 +126,65 @@ public class DcaCalculationService {
 
     private Double formatToEightDecimals(BigDecimal value) {
         return value.setScale(8, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    private List<OhlcvDataDTO> filterByFrequency(List<OhlcvDataDTO> data, DcaRequest.FrequencyEnum frequency) {
+        return switch (frequency) {
+            case WEEKLY -> data;
+            case MONTHLY -> filterFirstPerMonth(data);
+            case QUARTERLY -> filterFirstPerQuarter(data);
+        };
+    }
+
+    private List<OhlcvDataDTO> sortDataByDate(List<OhlcvDataDTO> data) {
+        if (data.isEmpty()) {
+            return data;
+        }
+        List<OhlcvDataDTO> sortedData = new ArrayList<>(data);
+        sortedData.sort(Comparator.comparing(OhlcvDataDTO::date));
+        return sortedData;
+    }
+
+    private List<OhlcvDataDTO> filterFirstPerMonth(List<OhlcvDataDTO> data) {
+        List<OhlcvDataDTO> sortedData = sortDataByDate(data);
+        if (sortedData.isEmpty()) {
+            return sortedData;
+        }
+
+        Map<String, OhlcvDataDTO> firstOfMonthMap = new LinkedHashMap<>();
+        
+        for (OhlcvDataDTO bar : sortedData) {
+            String yearMonth = bar.date().getYear() + "-" + bar.date().getMonthValue();
+            firstOfMonthMap.computeIfAbsent(yearMonth, k -> bar);
+        }
+        
+        return new ArrayList<>(firstOfMonthMap.values());
+    }
+
+    private List<OhlcvDataDTO> filterFirstPerQuarter(List<OhlcvDataDTO> data) {
+        List<OhlcvDataDTO> sortedData = sortDataByDate(data);
+        if (sortedData.isEmpty()) {
+            return sortedData;
+        }
+
+        Map<String, OhlcvDataDTO> firstOfQuarterMap = new LinkedHashMap<>();
+        
+        for (OhlcvDataDTO bar : sortedData) {
+            String yearQuarter = bar.date().getYear() + "-" + getQuarter(bar.date());
+            firstOfQuarterMap.computeIfAbsent(yearQuarter, k -> bar);
+        }
+        
+        return new ArrayList<>(firstOfQuarterMap.values());
+    }
+
+    private int getQuarter(LocalDate date) {
+        Month month = date.getMonth();
+        return switch (month) {
+            case JANUARY, FEBRUARY, MARCH -> 1;
+            case APRIL, MAY, JUNE -> 2;
+            case JULY, AUGUST, SEPTEMBER -> 3;
+            case OCTOBER, NOVEMBER, DECEMBER -> 4;
+        };
     }
 
     private DcaResponse createEmptyResponse() {
