@@ -112,6 +112,62 @@ public final class MockPriceData {
         return List.of();
     }
 
+    /**
+     * Multiple weekly data points per month for testing frequency filtering.
+     * 3 weeks in January (2024-01-07, 2024-01-14, 2024-01-21)
+     * 3 weeks in February (2024-02-04, 2024-02-11, 2024-02-18)
+     * 2 weeks in March (2024-03-03, 2024-03-10)
+     * Total: 8 data points
+     */
+    public static List<OhlcvDataDTO> multipleWeeklyPointsPerMonth() {
+        return List.of(
+                // January 2024 - 3 weeks
+                createOhlcvDataDTO("2024-01-07", 40000.0),
+                createOhlcvDataDTO("2024-01-14", 41000.0),
+                createOhlcvDataDTO("2024-01-21", 42000.0),
+                // February 2024 - 3 weeks
+                createOhlcvDataDTO("2024-02-04", 43000.0),
+                createOhlcvDataDTO("2024-02-11", 44000.0),
+                createOhlcvDataDTO("2024-02-18", 45000.0),
+                // March 2024 - 2 weeks
+                createOhlcvDataDTO("2024-03-03", 46000.0),
+                createOhlcvDataDTO("2024-03-10", 47000.0)
+        );
+    }
+
+    /**
+     * Multiple weekly data points per quarter for testing quarterly filtering.
+     * Q1 2024: weeks in Jan, Feb, Mar
+     * Q2 2024: weeks in Apr, May, Jun
+     * Total: 6 data points
+     */
+    public static List<OhlcvDataDTO> multipleWeeklyPointsPerQuarter() {
+        return List.of(
+                // Q1 2024
+                createOhlcvDataDTO("2024-01-07", 40000.0),
+                createOhlcvDataDTO("2024-02-04", 42000.0),
+                createOhlcvDataDTO("2024-03-03", 44000.0),
+                // Q2 2024
+                createOhlcvDataDTO("2024-04-07", 46000.0),
+                createOhlcvDataDTO("2024-05-05", 48000.0),
+                createOhlcvDataDTO("2024-06-02", 50000.0)
+        );
+    }
+
+    /**
+     * Unsorted weekly data to test sorting logic.
+     */
+    public static List<OhlcvDataDTO> unsortedWeeklyPoints() {
+        return List.of(
+                createOhlcvDataDTO("2024-02-11", 44000.0),
+                createOhlcvDataDTO("2024-01-07", 40000.0),
+                createOhlcvDataDTO("2024-03-03", 46000.0),
+                createOhlcvDataDTO("2024-01-21", 42000.0),
+                createOhlcvDataDTO("2024-02-04", 43000.0),
+                createOhlcvDataDTO("2024-01-14", 41000.0)
+        );
+    }
+
     private static OhlcvDataDTO createOhlcvDataDTO(String date, double closePrice) {
         LocalDate localDate = LocalDate.parse(date);
         return OhlcvDataDTO.builder()
