@@ -69,6 +69,14 @@ paths:
         - DCA
       security:
         - ApiKeyAuth: [ ]
+      parameters:
+        - name: detailed
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: Whether to return detailed investment breakdown
       requestBody:
         required: true
         content:
@@ -81,7 +89,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DcaResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/DcaResponse'
+                  - $ref: '#/components/schemas/DcaDetailedResponse'
         '400':
           description: Bad Request - Validation error
         '401':
@@ -182,6 +192,82 @@ components:
           format: double
           description: Return on investment as a decimal (e.g., 0.082 = 8.2%)
           example: 0.082
+    DcaDetailedResponse:
+      type: object
+      properties:
+        total_invested:
+          type: number
+          format: double
+          description: Total amount invested across all periods
+          example: 15600
+        units:
+          type: number
+          format: double
+          description: Total units accumulated through DCA purchases
+          example: 0.342
+        weighted_average_price:
+          type: number
+          format: double
+          description: Weighted average purchase price per unit
+          example: 45230.50
+        current_value:
+          type: number
+          format: double
+          description: Current value of accumulated units based on latest price
+          example: 28500
+        profit:
+          type: number
+          format: double
+          description: Absolute profit or loss (current_value - total_invested)
+          example: 12900
+        roi:
+          type: number
+          format: double
+          description: Return on investment as a decimal (e.g., 0.082 = 8.2%)
+          example: 0.082
+        investments:
+          type: array
+          description: Array of individual purchase details
+          items:
+            $ref: '#/components/schemas/DcaInvestmentDetail'
+    DcaInvestmentDetail:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          description: Date of the purchase
+          example: '2023-01-15'
+        amount:
+          type: number
+          format: double
+          description: Amount invested in this purchase
+          example: 100
+        price:
+          type: number
+          format: double
+          description: Price per unit on purchase date
+          example: 16500.50
+        units_purchased:
+          type: number
+          format: double
+          description: Units purchased in this transaction
+          example: 0.00606
+        cumulative_units:
+          type: number
+          format: double
+          description: Running total of units purchased
+          example: 0.00606
+        cumulative_invested:
+          type: number
+          format: double
+          description: Running total of amount invested
+          example: 100
+        value_at_date:
+          type: number
+          format: double
+          description: Value of holdings at that day's price (using cumulative units)
+          example: 100
     SymbolResponse:
       type: object
       required:

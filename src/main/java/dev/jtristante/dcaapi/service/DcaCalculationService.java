@@ -1,5 +1,8 @@
 package dev.jtristante.dcaapi.service;
 
+
+import dev.jtristante.dcaapi.dto.DcaDetailedResponse;
+import dev.jtristante.dcaapi.dto.DcaInvestmentDetail;
 import dev.jtristante.dcaapi.dto.DcaRequest;
 import dev.jtristante.dcaapi.dto.DcaResponse;
 import dev.jtristante.dcaapi.dto.OhlcvDataDTO;
@@ -15,50 +18,145 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+
 @Service
 public class DcaCalculationService {
 
-
     private static final int CALCULATION_SCALE = 10;
+
+    private record CalculationContext(
+            List<OhlcvDataDTO> filteredData,
+            LocalDate startDate,
+            LocalDate endDate,
+            BigDecimal currentPrice,
+            BigDecimal amount
+    ) {
+    }
+
+    private record CalculationMetrics(
+            BigDecimal totalInvested,
+            BigDecimal totalUnits,
+            List<DcaInvestmentDetail> investmentDetails
+    ) {
+    }
 
     public DcaResponse calculate(DcaRequest request, List<OhlcvDataDTO> ohlcvData) {
         if (isEmptyPriceData(ohlcvData)) {
             return createEmptyResponse();
         }
 
-        // Filter data by frequency before processing
-        List<OhlcvDataDTO> filteredData = filterByFrequency(ohlcvData, request.getFrequency());
+        CalculationContext context = createCalculationContext(request, ohlcvData);
+        CalculationMetrics metrics = accumulateInvestments(context, false);
 
-        LocalDate startDate = request.getStartDate();
-        LocalDate endDate = request.getEndDate();
-        BigDecimal currentPrice = getLatestPrice(ohlcvData);
-        BigDecimal amount = BigDecimal.valueOf(request.getAmount());
-
-        BigDecimal totalInvested = BigDecimal.ZERO;
-        BigDecimal totalUnits = BigDecimal.ZERO;
-
-        for (OhlcvDataDTO bar : filteredData) {
-            if (!isDateInRange(bar, startDate, endDate)) {
-                continue;
-            }
-
-            BigDecimal units = calculateUnitsForPurchase(amount, bar.close().doubleValue());
-            if (units.compareTo(BigDecimal.ZERO) > 0) {
-                totalInvested = totalInvested.add(amount);
-                totalUnits = totalUnits.add(units);
-            }
-        }
-
-        if (hasNoUnits(totalUnits)) {
+        if (hasNoUnits(metrics.totalUnits())) {
             return createEmptyResponse();
         }
 
-        BigDecimal weightedAveragePrice = calculateWeightedAveragePrice(totalInvested, totalUnits);
-        BigDecimal currentValue = calculateCurrentValue(totalUnits, currentPrice);
-        BigDecimal profit = calculateProfit(currentValue, totalInvested);
-        Double roiPct = calculateRoiPercentage(profit, totalInvested);
+        return buildSummaryResponse(context.currentPrice(), metrics);
+    }
 
-        return buildResponse(totalInvested, totalUnits, weightedAveragePrice, currentValue, profit, roiPct);
+    public DcaDetailedResponse calculateDetailed(DcaRequest request, List<OhlcvDataDTO> ohlcvData) {
+        if (isEmptyPriceData(ohlcvData)) {
+            return createEmptyDetailedResponse();
+        }
+
+        CalculationContext context = createCalculationContext(request, ohlcvData);
+        CalculationMetrics metrics = accumulateInvestments(context, true);
+
+        if (hasNoUnits(metrics.totalUnits())) {
+            return createEmptyDetailedResponse();
+        }
+
+        return buildDetailedResponse(context.currentPrice(), metrics);
+    }
+
+    private CalculationContext createCalculationContext(DcaRequest request, List<OhlcvDataDTO> ohlcvData) {
+        return new CalculationContext(
+                filterByFrequency(ohlcvData, request.getFrequency()),
+                request.getStartDate(),
+                request.getEndDate(),
+                getLatestPrice(ohlcvData),
+                BigDecimal.valueOf(request.getAmount())
+        );
+    }
+
+    private CalculationMetrics accumulateInvestments(CalculationContext context, boolean collectDetails) {
+        BigDecimal totalInvested = BigDecimal.ZERO;
+        BigDecimal totalUnits = BigDecimal.ZERO;
+        List<DcaInvestmentDetail> investmentDetails = collectDetails ? new ArrayList<>() : null;
+
+        for (OhlcvDataDTO bar : context.filteredData()) {
+            if (!isDateInRange(bar, context.startDate(), context.endDate())) {
+                continue;
+            }
+
+            BigDecimal units = calculateUnitsForPurchase(context.amount(), bar.close().doubleValue());
+            if (units.compareTo(BigDecimal.ZERO) > 0) {
+                totalInvested = totalInvested.add(context.amount());
+                totalUnits = totalUnits.add(units);
+
+                if (collectDetails) {
+                    investmentDetails.add(createInvestmentDetail(bar, context.amount(), units, totalInvested, totalUnits));
+                }
+            }
+        }
+
+        return new CalculationMetrics(totalInvested, totalUnits, investmentDetails);
+    }
+
+    private DcaInvestmentDetail createInvestmentDetail(OhlcvDataDTO bar, BigDecimal amount,
+                                                       BigDecimal units, BigDecimal cumulativeInvested,
+                                                       BigDecimal cumulativeUnits) {
+        return new DcaInvestmentDetail()
+                .date(bar.date())
+                .amount(formatToTwoDecimals(amount))
+                .price(formatToTwoDecimals(bar.close()))
+                .unitsPurchased(formatToEightDecimals(units))
+                .cumulativeUnits(formatToEightDecimals(cumulativeUnits))
+                .cumulativeInvested(formatToTwoDecimals(cumulativeInvested))
+                .valueAtDate(formatToTwoDecimals(cumulativeUnits.multiply(bar.close())));
+    }
+
+    private DcaResponse buildSummaryResponse(BigDecimal currentPrice, CalculationMetrics metrics) {
+        return new DcaResponse()
+                .totalInvested(formatToTwoDecimals(metrics.totalInvested()))
+                .units(formatToEightDecimals(metrics.totalUnits()))
+                .weightedAveragePrice(calculateWeightedAveragePrice(metrics.totalInvested(), metrics.totalUnits()))
+                .currentValue(calculateCurrentValue(metrics.totalUnits(), currentPrice))
+                .profit(calculateProfit(metrics.totalUnits(), currentPrice, metrics.totalInvested()))
+                .roi(calculateRoiPercentage(metrics.totalUnits(), currentPrice, metrics.totalInvested()));
+    }
+
+    private DcaDetailedResponse buildDetailedResponse(BigDecimal currentPrice, CalculationMetrics metrics) {
+        return new DcaDetailedResponse()
+                .totalInvested(formatToTwoDecimals(metrics.totalInvested()))
+                .units(formatToEightDecimals(metrics.totalUnits()))
+                .weightedAveragePrice(calculateWeightedAveragePrice(metrics.totalInvested(), metrics.totalUnits()))
+                .currentValue(calculateCurrentValue(metrics.totalUnits(), currentPrice))
+                .profit(calculateProfit(metrics.totalUnits(), currentPrice, metrics.totalInvested()))
+                .roi(calculateRoiPercentage(metrics.totalUnits(), currentPrice, metrics.totalInvested()))
+                .investments(metrics.investmentDetails());
+    }
+
+    private Double calculateWeightedAveragePrice(BigDecimal totalInvested, BigDecimal totalUnits) {
+        return formatToTwoDecimals(totalInvested.divide(totalUnits, CALCULATION_SCALE, RoundingMode.HALF_UP));
+    }
+
+    private Double calculateCurrentValue(BigDecimal totalUnits, BigDecimal currentPrice) {
+        return formatToTwoDecimals(totalUnits.multiply(currentPrice));
+    }
+
+    private Double calculateProfit(BigDecimal totalUnits, BigDecimal currentPrice, BigDecimal totalInvested) {
+        return formatToTwoDecimals(totalUnits.multiply(currentPrice).subtract(totalInvested));
+    }
+
+    private Double calculateRoiPercentage(BigDecimal totalUnits, BigDecimal currentPrice, BigDecimal totalInvested) {
+        if (totalInvested.compareTo(BigDecimal.ZERO) <= 0) {
+            return 0.0;
+        }
+        BigDecimal currentValue = totalUnits.multiply(currentPrice);
+        BigDecimal profit = currentValue.subtract(totalInvested);
+        return profit.divide(totalInvested, RoundingMode.HALF_UP).setScale(3, RoundingMode.HALF_UP).doubleValue();
     }
 
     private boolean isEmptyPriceData(List<OhlcvDataDTO> priceData) {
@@ -69,12 +167,8 @@ public class DcaCalculationService {
         return priceData.getLast().close();
     }
 
-    private LocalDate barToLocalDate(OhlcvDataDTO bar) {
-        return bar.date();
-    }
-
     private boolean isDateInRange(OhlcvDataDTO bar, LocalDate startDate, LocalDate endDate) {
-        LocalDate barDate = barToLocalDate(bar);
+        LocalDate barDate = bar.date();
         return !barDate.isBefore(startDate) && !barDate.isAfter(endDate);
     }
 
@@ -87,37 +181,6 @@ public class DcaCalculationService {
 
     private boolean hasNoUnits(BigDecimal totalUnits) {
         return totalUnits.compareTo(BigDecimal.ZERO) == 0;
-    }
-
-    private BigDecimal calculateWeightedAveragePrice(BigDecimal totalInvested, BigDecimal totalUnits) {
-        return totalInvested.divide(totalUnits, CALCULATION_SCALE, RoundingMode.HALF_UP);
-    }
-
-    private BigDecimal calculateCurrentValue(BigDecimal totalUnits, BigDecimal currentPrice) {
-        return totalUnits.multiply(currentPrice);
-    }
-
-    private BigDecimal calculateProfit(BigDecimal currentValue, BigDecimal totalInvested) {
-        return currentValue.subtract(totalInvested);
-    }
-
-    private Double calculateRoiPercentage(BigDecimal profit, BigDecimal totalInvested) {
-        if (totalInvested.compareTo(BigDecimal.ZERO) <= 0) {
-            return 0.0;
-        }
-        return profit.divide(totalInvested, RoundingMode.HALF_UP).setScale(3, RoundingMode.HALF_UP).doubleValue();
-    }
-
-    private DcaResponse buildResponse(BigDecimal totalInvested, BigDecimal totalUnits,
-                                      BigDecimal weightedAveragePrice, BigDecimal currentValue,
-                                      BigDecimal profit, Double roiPct) {
-        return new DcaResponse()
-                .totalInvested(formatToTwoDecimals(totalInvested))
-                .units(formatToEightDecimals(totalUnits))
-                .weightedAveragePrice(formatToTwoDecimals(weightedAveragePrice))
-                .currentValue(formatToTwoDecimals(currentValue))
-                .profit(formatToTwoDecimals(profit))
-                .roi(roiPct);
     }
 
     private Double formatToTwoDecimals(BigDecimal value) {
@@ -152,12 +215,12 @@ public class DcaCalculationService {
         }
 
         Map<String, OhlcvDataDTO> firstOfMonthMap = new LinkedHashMap<>();
-        
+
         for (OhlcvDataDTO bar : sortedData) {
             String yearMonth = bar.date().getYear() + "-" + bar.date().getMonthValue();
-            firstOfMonthMap.computeIfAbsent(yearMonth, k -> bar);
+            firstOfMonthMap.putIfAbsent(yearMonth, bar);
         }
-        
+
         return new ArrayList<>(firstOfMonthMap.values());
     }
 
@@ -168,12 +231,12 @@ public class DcaCalculationService {
         }
 
         Map<String, OhlcvDataDTO> firstOfQuarterMap = new LinkedHashMap<>();
-        
+
         for (OhlcvDataDTO bar : sortedData) {
             String yearQuarter = bar.date().getYear() + "-" + getQuarter(bar.date());
-            firstOfQuarterMap.computeIfAbsent(yearQuarter, k -> bar);
+            firstOfQuarterMap.putIfAbsent(yearQuarter, bar);
         }
-        
+
         return new ArrayList<>(firstOfQuarterMap.values());
     }
 
@@ -195,5 +258,16 @@ public class DcaCalculationService {
                 .currentValue(0.0)
                 .profit(0.0)
                 .roi(0.0);
+    }
+
+    private DcaDetailedResponse createEmptyDetailedResponse() {
+        return new DcaDetailedResponse()
+                .totalInvested(0.0)
+                .units(0.0)
+                .weightedAveragePrice(0.0)
+                .currentValue(0.0)
+                .profit(0.0)
+                .roi(0.0)
+                .investments(new ArrayList<>());
     }
 }
