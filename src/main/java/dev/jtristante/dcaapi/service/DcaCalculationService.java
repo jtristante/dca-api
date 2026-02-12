@@ -1,10 +1,7 @@
 package dev.jtristante.dcaapi.service;
 
-
-import dev.jtristante.dcaapi.dto.DcaDetailedResponse;
-import dev.jtristante.dcaapi.dto.DcaInvestmentDetail;
+import dev.jtristante.dcaapi.dto.DcaCalculationResult;
 import dev.jtristante.dcaapi.dto.DcaRequest;
-import dev.jtristante.dcaapi.dto.DcaResponse;
 import dev.jtristante.dcaapi.dto.OhlcvDataDTO;
 import org.springframework.stereotype.Service;
 
@@ -33,41 +30,31 @@ public class DcaCalculationService {
     ) {
     }
 
-    private record CalculationMetrics(
+    private record InvestmentPoint(
+            LocalDate date,
             BigDecimal totalInvested,
             BigDecimal totalUnits,
-            List<DcaInvestmentDetail> investmentDetails
+            BigDecimal currentPrice
     ) {
     }
 
-    public DcaResponse calculate(DcaRequest request, List<OhlcvDataDTO> ohlcvData) {
+    public List<DcaCalculationResult> calculateDca(DcaRequest request, List<OhlcvDataDTO> ohlcvData, boolean detailed) {
         if (isEmptyPriceData(ohlcvData)) {
-            return createEmptyResponse();
+            return createEmptyResponse(request.getEndDate());
         }
 
         CalculationContext context = createCalculationContext(request, ohlcvData);
-        CalculationMetrics metrics = accumulateInvestments(context, false);
+        List<InvestmentPoint> points = accumulateInvestments(context);
 
-        if (hasNoUnits(metrics.totalUnits())) {
-            return createEmptyResponse();
+        if (points.isEmpty()) {
+            return createEmptyResponse(request.getEndDate());
         }
 
-        return buildSummaryResponse(context.currentPrice(), metrics);
-    }
-
-    public DcaDetailedResponse calculateDetailed(DcaRequest request, List<OhlcvDataDTO> ohlcvData) {
-        if (isEmptyPriceData(ohlcvData)) {
-            return createEmptyDetailedResponse();
+        if (detailed) {
+            return buildDetailedResults(points);
+        } else {
+            return buildSummaryResult(points, context.currentPrice(), request.getEndDate());
         }
-
-        CalculationContext context = createCalculationContext(request, ohlcvData);
-        CalculationMetrics metrics = accumulateInvestments(context, true);
-
-        if (hasNoUnits(metrics.totalUnits())) {
-            return createEmptyDetailedResponse();
-        }
-
-        return buildDetailedResponse(context.currentPrice(), metrics);
     }
 
     private CalculationContext createCalculationContext(DcaRequest request, List<OhlcvDataDTO> ohlcvData) {
@@ -80,10 +67,10 @@ public class DcaCalculationService {
         );
     }
 
-    private CalculationMetrics accumulateInvestments(CalculationContext context, boolean collectDetails) {
+    private List<InvestmentPoint> accumulateInvestments(CalculationContext context) {
         BigDecimal totalInvested = BigDecimal.ZERO;
         BigDecimal totalUnits = BigDecimal.ZERO;
-        List<DcaInvestmentDetail> investmentDetails = collectDetails ? new ArrayList<>() : null;
+        List<InvestmentPoint> points = new ArrayList<>();
 
         for (OhlcvDataDTO bar : context.filteredData()) {
             if (!isDateInRange(bar, context.startDate(), context.endDate())) {
@@ -94,56 +81,47 @@ public class DcaCalculationService {
             if (units.compareTo(BigDecimal.ZERO) > 0) {
                 totalInvested = totalInvested.add(context.amount());
                 totalUnits = totalUnits.add(units);
-
-                if (collectDetails) {
-                    investmentDetails.add(createInvestmentDetail(bar, context.amount(), units, totalInvested, totalUnits));
-                }
+                points.add(new InvestmentPoint(bar.date(), totalInvested, totalUnits, bar.close()));
             }
         }
 
-        return new CalculationMetrics(totalInvested, totalUnits, investmentDetails);
+        return points;
     }
 
-    private DcaInvestmentDetail createInvestmentDetail(OhlcvDataDTO bar, BigDecimal amount,
-                                                       BigDecimal units, BigDecimal cumulativeInvested,
-                                                       BigDecimal cumulativeUnits) {
-        return new DcaInvestmentDetail()
-                .date(bar.date())
-                .amount(formatToTwoDecimals(amount))
-                .price(formatToTwoDecimals(bar.close()))
-                .unitsPurchased(formatToEightDecimals(units))
-                .cumulativeUnits(formatToEightDecimals(cumulativeUnits))
-                .cumulativeInvested(formatToTwoDecimals(cumulativeInvested))
-                .valueAtDate(formatToTwoDecimals(cumulativeUnits.multiply(bar.close())));
+    private List<DcaCalculationResult> buildSummaryResult(List<InvestmentPoint> points, BigDecimal currentPrice, LocalDate endDate) {
+        InvestmentPoint lastPoint = points.getLast();
+        DcaCalculationResult result = new DcaCalculationResult();
+        result.setDate(endDate);
+        result.setTotalInvested(formatToTwoDecimals(lastPoint.totalInvested()));
+        result.setUnits(formatToEightDecimals(lastPoint.totalUnits()));
+        result.setWeightedAveragePrice(calculateWeightedAveragePrice(lastPoint.totalInvested(), lastPoint.totalUnits()));
+        result.setProfit(calculateProfit(lastPoint.totalUnits(), currentPrice, lastPoint.totalInvested()));
+        result.setRoi(calculateRoiPercentage(lastPoint.totalUnits(), currentPrice, lastPoint.totalInvested()));
+        return List.of(result);
     }
 
-    private DcaResponse buildSummaryResponse(BigDecimal currentPrice, CalculationMetrics metrics) {
-        return new DcaResponse()
-                .totalInvested(formatToTwoDecimals(metrics.totalInvested()))
-                .units(formatToEightDecimals(metrics.totalUnits()))
-                .weightedAveragePrice(calculateWeightedAveragePrice(metrics.totalInvested(), metrics.totalUnits()))
-                .currentValue(calculateCurrentValue(metrics.totalUnits(), currentPrice))
-                .profit(calculateProfit(metrics.totalUnits(), currentPrice, metrics.totalInvested()))
-                .roi(calculateRoiPercentage(metrics.totalUnits(), currentPrice, metrics.totalInvested()));
-    }
+    private List<DcaCalculationResult> buildDetailedResults(List<InvestmentPoint> points) {
+        List<DcaCalculationResult> results = new ArrayList<>();
 
-    private DcaDetailedResponse buildDetailedResponse(BigDecimal currentPrice, CalculationMetrics metrics) {
-        return new DcaDetailedResponse()
-                .totalInvested(formatToTwoDecimals(metrics.totalInvested()))
-                .units(formatToEightDecimals(metrics.totalUnits()))
-                .weightedAveragePrice(calculateWeightedAveragePrice(metrics.totalInvested(), metrics.totalUnits()))
-                .currentValue(calculateCurrentValue(metrics.totalUnits(), currentPrice))
-                .profit(calculateProfit(metrics.totalUnits(), currentPrice, metrics.totalInvested()))
-                .roi(calculateRoiPercentage(metrics.totalUnits(), currentPrice, metrics.totalInvested()))
-                .investments(metrics.investmentDetails());
+        for (InvestmentPoint point : points) {
+            DcaCalculationResult result = new DcaCalculationResult();
+            result.setDate(point.date());
+            result.setTotalInvested(formatToTwoDecimals(point.totalInvested()));
+            result.setUnits(formatToEightDecimals(point.totalUnits()));
+            result.setWeightedAveragePrice(calculateWeightedAveragePrice(point.totalInvested(), point.totalUnits()));
+            result.setProfit(calculateProfit(point.totalUnits(), point.currentPrice(), point.totalInvested()));
+            result.setRoi(calculateRoiPercentage(point.totalUnits(), point.currentPrice(), point.totalInvested()));
+            results.add(result);
+        }
+
+        return results;
     }
 
     private Double calculateWeightedAveragePrice(BigDecimal totalInvested, BigDecimal totalUnits) {
+        if (totalUnits.compareTo(BigDecimal.ZERO) == 0) {
+            return 0.0;
+        }
         return formatToTwoDecimals(totalInvested.divide(totalUnits, CALCULATION_SCALE, RoundingMode.HALF_UP));
-    }
-
-    private Double calculateCurrentValue(BigDecimal totalUnits, BigDecimal currentPrice) {
-        return formatToTwoDecimals(totalUnits.multiply(currentPrice));
     }
 
     private Double calculateProfit(BigDecimal totalUnits, BigDecimal currentPrice, BigDecimal totalInvested) {
@@ -177,10 +155,6 @@ public class DcaCalculationService {
             return BigDecimal.ZERO;
         }
         return amount.divide(BigDecimal.valueOf(price), CALCULATION_SCALE, RoundingMode.HALF_UP);
-    }
-
-    private boolean hasNoUnits(BigDecimal totalUnits) {
-        return totalUnits.compareTo(BigDecimal.ZERO) == 0;
     }
 
     private Double formatToTwoDecimals(BigDecimal value) {
@@ -250,24 +224,14 @@ public class DcaCalculationService {
         };
     }
 
-    private DcaResponse createEmptyResponse() {
-        return new DcaResponse()
-                .totalInvested(0.0)
-                .units(0.0)
-                .weightedAveragePrice(0.0)
-                .currentValue(0.0)
-                .profit(0.0)
-                .roi(0.0);
-    }
-
-    private DcaDetailedResponse createEmptyDetailedResponse() {
-        return new DcaDetailedResponse()
-                .totalInvested(0.0)
-                .units(0.0)
-                .weightedAveragePrice(0.0)
-                .currentValue(0.0)
-                .profit(0.0)
-                .roi(0.0)
-                .investments(new ArrayList<>());
+    private List<DcaCalculationResult> createEmptyResponse(LocalDate endDate) {
+        DcaCalculationResult result = new DcaCalculationResult();
+        result.setDate(endDate);
+        result.setTotalInvested(0.0);
+        result.setUnits(0.0);
+        result.setWeightedAveragePrice(0.0);
+        result.setProfit(0.0);
+        result.setRoi(0.0);
+        return List.of(result);
     }
 }

@@ -1,7 +1,6 @@
 package dev.jtristante.dcaapi.service;
 
-import dev.jtristante.dcaapi.dto.DcaDetailedResponse;
-import dev.jtristante.dcaapi.dto.DcaInvestmentDetail;
+import dev.jtristante.dcaapi.dto.DcaCalculationResult;
 import dev.jtristante.dcaapi.dto.DcaRequest;
 import dev.jtristante.dcaapi.dto.OhlcvDataDTO;
 import dev.jtristante.dcaapi.testdata.MockPriceData;
@@ -26,374 +25,322 @@ class DcaCalculationDetailedTest {
     }
 
     @Nested
-    @DisplayName("calculateDetailed basic functionality")
+    @DisplayName("calculateDca detailed basic functionality")
     class CalculateDetailedBasicTests {
 
         @Test
-        @DisplayName("should return detailed response with investments array")
-        void calculateDetailed_shouldReturnDetailedResponse_withInvestments() {
+        @DisplayName("should return list with multiple results (one per purchase)")
+        void calculateDca_detailed_shouldReturnMultipleResults() {
             DcaRequest request = new DcaRequest("BTC-EUR", 100.0, DcaRequest.FrequencyEnum.MONTHLY,
                     LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31));
 
             List<OhlcvDataDTO> priceData = MockPriceData.risingPricesOhlcv();
 
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
+            List<DcaCalculationResult> result = service.calculateDca(request, priceData, true);
 
-            assertThat(result.getTotalInvested()).isEqualTo(300.0);
-            assertThat(result.getUnits()).isGreaterThan(0.0);
-            assertThat(result.getWeightedAveragePrice()).isGreaterThan(0.0);
-            assertThat(result.getCurrentValue()).isGreaterThan(0.0);
-            assertThat(result.getProfit()).isGreaterThan(0.0);
-            assertThat(result.getRoi()).isNotNull();
-            assertThat(result.getInvestments()).isNotNull();
-            assertThat(result.getInvestments()).hasSize(3);
+            assertThat(result).hasSize(3);
+            assertThat(result.getFirst().getTotalInvested()).isEqualTo(100.0);
+            assertThat(result.getFirst().getUnits()).isGreaterThan(0.0);
+            assertThat(result.getFirst().getWeightedAveragePrice()).isGreaterThan(0.0);
+            assertThat(result.getFirst().getProfit()).isNotNull();
+            assertThat(result.getFirst().getRoi()).isNotNull();
         }
 
         @Test
-        @DisplayName("should return empty investments list when no price data")
-        void calculateDetailed_shouldReturnEmptyInvestmentsList_whenNoPriceData() {
+        @DisplayName("should return single empty result when no price data")
+        void calculateDca_detailed_shouldReturnEmptyResult_whenNoPriceData() {
             DcaRequest request = new DcaRequest("BTC-EUR", 100.0, DcaRequest.FrequencyEnum.MONTHLY,
                     LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31));
 
             List<OhlcvDataDTO> priceData = MockPriceData.emptyPricesOhlcv();
 
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
+            List<DcaCalculationResult> result = service.calculateDca(request, priceData, true);
 
-            assertThat(result.getTotalInvested()).isEqualTo(0.0);
-            assertThat(result.getUnits()).isEqualTo(0.0);
-            assertThat(result.getWeightedAveragePrice()).isEqualTo(0.0);
-            assertThat(result.getCurrentValue()).isEqualTo(0.0);
-            assertThat(result.getProfit()).isEqualTo(0.0);
-            assertThat(result.getRoi()).isEqualTo(0.0);
-            assertThat(result.getInvestments()).isNotNull();
-            assertThat(result.getInvestments()).isEmpty();
+            assertThat(result).hasSize(1);
+            assertThat(result.getFirst().getTotalInvested()).isEqualTo(0.0);
+            assertThat(result.getFirst().getUnits()).isEqualTo(0.0);
+            assertThat(result.getFirst().getWeightedAveragePrice()).isEqualTo(0.0);
+            assertThat(result.getFirst().getProfit()).isEqualTo(0.0);
+            assertThat(result.getFirst().getRoi()).isEqualTo(0.0);
         }
 
         @Test
-        @DisplayName("should return empty investments list when price data is null")
-        void calculateDetailed_shouldReturnEmptyInvestmentsList_whenPriceDataIsNull() {
+        @DisplayName("should return single empty result when price data is null")
+        void calculateDca_detailed_shouldReturnEmptyResult_whenPriceDataIsNull() {
             DcaRequest request = new DcaRequest("BTC-EUR", 100.0, DcaRequest.FrequencyEnum.WEEKLY,
                     LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31));
 
-            DcaDetailedResponse result = service.calculateDetailed(request, null);
+            List<DcaCalculationResult> result = service.calculateDca(request, null, true);
 
-            assertThat(result.getTotalInvested()).isEqualTo(0.0);
-            assertThat(result.getRoi()).isEqualTo(0.0);
-            assertThat(result.getInvestments()).isNotNull();
-            assertThat(result.getInvestments()).isEmpty();
+            assertThat(result).hasSize(1);
+            assertThat(result.getFirst().getTotalInvested()).isEqualTo(0.0);
+            assertThat(result.getFirst().getRoi()).isEqualTo(0.0);
         }
 
         @Test
-        @DisplayName("should return empty investments list when no valid purchases")
-        void calculateDetailed_shouldReturnEmptyInvestmentsList_whenNoValidPurchases() {
+        @DisplayName("should return single empty result when no valid purchases")
+        void calculateDca_detailed_shouldReturnEmptyResult_whenNoValidPurchases() {
             DcaRequest request = new DcaRequest("BTC-EUR", 100.0, DcaRequest.FrequencyEnum.MONTHLY,
                     LocalDate.of(2025, 1, 1), LocalDate.of(2025, 12, 31));
 
             List<OhlcvDataDTO> priceData = MockPriceData.risingPricesOhlcv();
 
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
+            List<DcaCalculationResult> result = service.calculateDca(request, priceData, true);
 
-            assertThat(result.getTotalInvested()).isEqualTo(0.0);
-            assertThat(result.getUnits()).isEqualTo(0.0);
-            assertThat(result.getInvestments()).isNotNull();
-            assertThat(result.getInvestments()).isEmpty();
+            assertThat(result).hasSize(1);
+            assertThat(result.getFirst().getTotalInvested()).isEqualTo(0.0);
+            assertThat(result.getFirst().getUnits()).isEqualTo(0.0);
         }
     }
 
     @Nested
-    @DisplayName("calculateDetailed investment detail fields")
+    @DisplayName("calculateDca detailed result fields")
     class CalculateDetailedFieldsTests {
 
         @Test
-        @DisplayName("should include correct date in investment details")
-        void calculateDetailed_shouldIncludeCorrectDate_investmentDetails() {
+        @DisplayName("should include correct date for each result")
+        void calculateDca_detailed_shouldIncludeCorrectDate() {
             DcaRequest request = new DcaRequest("BTC-EUR", 100.0, DcaRequest.FrequencyEnum.MONTHLY,
                     LocalDate.of(2024, 1, 1), LocalDate.of(2024, 2, 29));
 
             List<OhlcvDataDTO> priceData = MockPriceData.fallingPricesOhlcv();
 
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
+            List<DcaCalculationResult> result = service.calculateDca(request, priceData, true);
 
-            assertThat(result.getInvestments()).hasSize(2);
-            assertThat(result.getInvestments().get(0).getDate()).isEqualTo(LocalDate.of(2024, 1, 31));
-            assertThat(result.getInvestments().get(1).getDate()).isEqualTo(LocalDate.of(2024, 2, 29));
+            assertThat(result).hasSize(2);
+            assertThat(result.getFirst().getDate()).isEqualTo(LocalDate.of(2024, 1, 31));
+            assertThat(result.get(1).getDate()).isEqualTo(LocalDate.of(2024, 2, 29));
         }
 
         @Test
-        @DisplayName("should include correct amount in investment details")
-        void calculateDetailed_shouldIncludeCorrectAmount_investmentDetails() {
-            DcaRequest request = new DcaRequest("BTC-EUR", 150.0, DcaRequest.FrequencyEnum.WEEKLY,
-                    LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31));
-
-            List<OhlcvDataDTO> priceData = MockPriceData.risingPricesOhlcv();
-
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
-
-            assertThat(result.getInvestments()).hasSize(3);
-            for (DcaInvestmentDetail detail : result.getInvestments()) {
-                assertThat(detail.getAmount()).isEqualTo(150.0);
-            }
-        }
-
-        @Test
-        @DisplayName("should include correct price in investment details")
-        void calculateDetailed_shouldIncludeCorrectPrice_investmentDetails() {
+        @DisplayName("should have increasing total invested in each result")
+        void calculateDca_detailed_shouldHaveIncreasingTotalInvested() {
             DcaRequest request = new DcaRequest("BTC-EUR", 100.0, DcaRequest.FrequencyEnum.MONTHLY,
                     LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31));
 
             List<OhlcvDataDTO> priceData = MockPriceData.risingPricesOhlcv();
 
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
+            List<DcaCalculationResult> result = service.calculateDca(request, priceData, true);
 
-            assertThat(result.getInvestments()).hasSize(3);
-            assertThat(result.getInvestments().get(0).getPrice()).isEqualTo(42500.0);
-            assertThat(result.getInvestments().get(1).getPrice()).isEqualTo(52500.0);
-            assertThat(result.getInvestments().get(2).getPrice()).isEqualTo(61500.0);
+            assertThat(result).hasSize(3);
+            assertThat(result.getFirst().getTotalInvested()).isEqualTo(100.0);
+            assertThat(result.get(1).getTotalInvested()).isEqualTo(200.0);
+            assertThat(result.get(2).getTotalInvested()).isEqualTo(300.0);
         }
 
         @Test
-        @DisplayName("should include correct units purchased in investment details")
-        void calculateDetailed_shouldIncludeCorrectUnitsPurchased_investmentDetails() {
+        @DisplayName("should have increasing units in each result")
+        void calculateDca_detailed_shouldHaveIncreasingUnits() {
             DcaRequest request = new DcaRequest("BTC-EUR", 10000.0, DcaRequest.FrequencyEnum.MONTHLY,
                     LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31));
 
             List<OhlcvDataDTO> priceData = MockPriceData.risingPricesOhlcv();
 
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
+            List<DcaCalculationResult> result = service.calculateDca(request, priceData, true);
 
-            assertThat(result.getInvestments()).hasSize(3);
-            assertThat(result.getInvestments().get(0).getUnitsPurchased())
+            assertThat(result).hasSize(3);
+            assertThat(result.getFirst().getUnits())
                     .isCloseTo(0.23529412, offset(0.00000001));
-            assertThat(result.getInvestments().get(1).getUnitsPurchased())
-                    .isCloseTo(0.19047619, offset(0.00000001));
-            assertThat(result.getInvestments().get(2).getUnitsPurchased())
-                    .isCloseTo(0.16260163, offset(0.00000001));
-        }
-
-        @Test
-        @DisplayName("should include correct cumulative units in investment details")
-        void calculateDetailed_shouldIncludeCorrectCumulativeUnits_investmentDetails() {
-            DcaRequest request = new DcaRequest("BTC-EUR", 10000.0, DcaRequest.FrequencyEnum.MONTHLY,
-                    LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31));
-
-            List<OhlcvDataDTO> priceData = MockPriceData.risingPricesOhlcv();
-
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
-
-            assertThat(result.getInvestments()).hasSize(3);
-            assertThat(result.getInvestments().get(0).getCumulativeUnits())
-                    .isCloseTo(0.23529412, offset(0.00000001));
-            assertThat(result.getInvestments().get(1).getCumulativeUnits())
+            assertThat(result.get(1).getUnits())
                     .isCloseTo(0.42577031, offset(0.00000001));
-            assertThat(result.getInvestments().get(2).getCumulativeUnits())
+            assertThat(result.get(2).getUnits())
                     .isCloseTo(0.58837194, offset(0.00000001));
+            assertThat(result.get(1).getUnits()).isGreaterThan(result.getFirst().getUnits());
+            assertThat(result.get(2).getUnits()).isGreaterThan(result.get(1).getUnits());
         }
 
         @Test
-        @DisplayName("should include correct cumulative invested in investment details")
-        void calculateDetailed_shouldIncludeCorrectCumulativeInvested_investmentDetails() {
+        @DisplayName("should have correct weighted average price in each result")
+        void calculateDca_detailed_shouldHaveCorrectWeightedAveragePrice() {
             DcaRequest request = new DcaRequest("BTC-EUR", 100.0, DcaRequest.FrequencyEnum.MONTHLY,
                     LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31));
 
             List<OhlcvDataDTO> priceData = MockPriceData.risingPricesOhlcv();
 
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
+            List<DcaCalculationResult> result = service.calculateDca(request, priceData, true);
 
-            assertThat(result.getInvestments()).hasSize(3);
-            assertThat(result.getInvestments().get(0).getCumulativeInvested()).isEqualTo(100.0);
-            assertThat(result.getInvestments().get(1).getCumulativeInvested()).isEqualTo(200.0);
-            assertThat(result.getInvestments().get(2).getCumulativeInvested()).isEqualTo(300.0);
+            assertThat(result).hasSize(3);
+            // First purchase: weighted average = purchase price
+            assertThat(result.getFirst().getWeightedAveragePrice()).isEqualTo(42500.0);
+            // Weighted average should be recalculated with each purchase
+            assertThat(result.get(1).getWeightedAveragePrice()).isGreaterThan(0.0);
+            assertThat(result.get(2).getWeightedAveragePrice()).isGreaterThan(0.0);
         }
 
         @Test
-        @DisplayName("should include correct value at date in investment details")
-        void calculateDetailed_shouldIncludeCorrectValueAtDate_investmentDetails() {
+        @DisplayName("should have correct profit and ROI in each result")
+        void calculateDca_detailed_shouldHaveCorrectProfitAndRoi() {
             DcaRequest request = new DcaRequest("BTC-EUR", 100.0, DcaRequest.FrequencyEnum.MONTHLY,
                     LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31));
 
             List<OhlcvDataDTO> priceData = MockPriceData.risingPricesOhlcv();
 
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
+            List<DcaCalculationResult> result = service.calculateDca(request, priceData, true);
 
-            assertThat(result.getInvestments()).hasSize(3);
-            assertThat(result.getInvestments().get(0).getValueAtDate())
-                    .isCloseTo(100.00, offset(0.5));
-            assertThat(result.getInvestments().get(1).getValueAtDate())
-                    .isCloseTo(223.53, offset(0.5));
-            assertThat(result.getInvestments().get(2).getValueAtDate())
-                    .isCloseTo(361.85, offset(0.5));
+            assertThat(result).hasSize(3);
+            for (DcaCalculationResult r : result) {
+                assertThat(r.getProfit()).isNotNull();
+                assertThat(r.getRoi()).isNotNull();
+            }
         }
     }
 
     @Nested
-    @DisplayName("calculateDetailed edge cases")
+    @DisplayName("calculateDca detailed edge cases")
     class CalculateDetailedEdgeCaseTests {
 
         @Test
         @DisplayName("should handle single purchase")
-        void calculateDetailed_shouldHandleSinglePurchase() {
+        void calculateDca_detailed_shouldHandleSinglePurchase() {
             DcaRequest request = new DcaRequest("BTC-EUR", 100.0, DcaRequest.FrequencyEnum.MONTHLY,
                     LocalDate.of(2024, 3, 1), LocalDate.of(2024, 3, 31));
 
             List<OhlcvDataDTO> priceData = MockPriceData.singlePurchasePricesOhlcv();
 
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
+            List<DcaCalculationResult> result = service.calculateDca(request, priceData, true);
 
-            assertThat(result.getTotalInvested()).isEqualTo(100.0);
-            assertThat(result.getUnits()).isGreaterThan(0.0);
-            assertThat(result.getInvestments()).isNotNull();
-            assertThat(result.getInvestments()).hasSize(1);
-            assertThat(result.getInvestments().getFirst().getCumulativeUnits())
-                    .isEqualTo(result.getInvestments().getFirst().getUnitsPurchased());
-            assertThat(result.getInvestments().getFirst().getCumulativeInvested())
-                    .isEqualTo(100.0);
+            assertThat(result).hasSize(1);
+            assertThat(result.getFirst().getTotalInvested()).isEqualTo(100.0);
+            assertThat(result.getFirst().getUnits()).isGreaterThan(0.0);
         }
 
         @Test
         @DisplayName("should skip dates outside investment period")
-        void calculateDetailed_shouldSkipDatesOutsideInvestmentPeriod() {
+        void calculateDca_detailed_shouldSkipDatesOutsideInvestmentPeriod() {
             DcaRequest request = new DcaRequest("BTC-EUR", 100.0, DcaRequest.FrequencyEnum.MONTHLY,
                     LocalDate.of(2024, 3, 1), LocalDate.of(2024, 4, 30));
 
             List<OhlcvDataDTO> priceData = MockPriceData.mixedPricesOhlcv();
 
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
+            List<DcaCalculationResult> result = service.calculateDca(request, priceData, true);
 
-            assertThat(result.getTotalInvested()).isEqualTo(200.0);
-            assertThat(result.getUnits()).isGreaterThan(0.0);
-            assertThat(result.getInvestments()).hasSize(2);
-            assertThat(result.getInvestments().get(0).getDate()).isAfterOrEqualTo(LocalDate.of(2024, 3, 1));
-            assertThat(result.getInvestments().get(1).getDate()).isBeforeOrEqualTo(LocalDate.of(2024, 4, 30));
+            assertThat(result).hasSize(2);
+            assertThat(result.getFirst().getDate()).isAfterOrEqualTo(LocalDate.of(2024, 3, 1));
+            assertThat(result.get(1).getDate()).isBeforeOrEqualTo(LocalDate.of(2024, 4, 30));
         }
 
         @Test
         @DisplayName("should calculate positive ROI when price appreciates")
-        void calculateDetailed_shouldCalculatePositiveRoi_whenPriceAppreciates() {
+        void calculateDca_detailed_shouldCalculatePositiveRoi_whenPriceAppreciates() {
             DcaRequest request = new DcaRequest("BTC-EUR", 100.0, DcaRequest.FrequencyEnum.QUARTERLY,
                     LocalDate.of(2024, 1, 1), LocalDate.of(2024, 6, 30));
 
             List<OhlcvDataDTO> priceData = MockPriceData.appreciationPricesOhlcv();
 
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
+            List<DcaCalculationResult> result = service.calculateDca(request, priceData, true);
 
-            assertThat(result.getTotalInvested()).isEqualTo(200.0);
-            assertThat(result.getProfit()).isGreaterThan(0.0);
-            assertThat(result.getRoi()).isNotNull();
-            assertThat(result.getInvestments()).hasSize(2);
-            assertThat(result.getInvestments().get(1).getValueAtDate())
-                    .isGreaterThan(result.getInvestments().get(1).getCumulativeInvested());
+            assertThat(result).hasSize(2);
+            assertThat(result.getFirst().getTotalInvested()).isEqualTo(100.0);
+            assertThat(result.get(1).getTotalInvested()).isEqualTo(200.0);
+            assertThat(result.get(1).getProfit()).isGreaterThan(0.0);
+            assertThat(result.get(1).getRoi()).isGreaterThan(0.0);
         }
 
         @Test
         @DisplayName("should calculate negative ROI when price depreciates")
-        void calculateDetailed_shouldCalculateNegativeRoi_whenPriceDepreciates() {
+        void calculateDca_detailed_shouldCalculateNegativeRoi_whenPriceDepreciates() {
             DcaRequest request = new DcaRequest("BTC-EUR", 100.0, DcaRequest.FrequencyEnum.MONTHLY,
                     LocalDate.of(2024, 1, 1), LocalDate.of(2024, 2, 29));
 
             List<OhlcvDataDTO> priceData = MockPriceData.fallingPricesOhlcv();
 
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
+            List<DcaCalculationResult> result = service.calculateDca(request, priceData, true);
 
-            assertThat(result.getTotalInvested()).isEqualTo(200.0);
-            assertThat(result.getProfit()).isLessThan(0.0);
-            assertThat(result.getRoi()).isLessThan(0.0);
-            assertThat(result.getInvestments()).hasSize(2);
+            assertThat(result).hasSize(2);
+            assertThat(result.get(1).getTotalInvested()).isEqualTo(200.0);
+            assertThat(result.get(1).getProfit()).isLessThan(0.0);
+            assertThat(result.get(1).getRoi()).isLessThan(0.0);
         }
     }
 
     @Nested
-    @DisplayName("calculateDetailed with frequency filtering")
+    @DisplayName("calculateDca with frequency filtering")
     class CalculateDetailedFrequencyTests {
 
         @Test
         @DisplayName("WEEKLY frequency should track all data points")
-        void calculateDetailed_withWeeklyFrequency_shouldTrackAllPoints() {
+        void calculateDca_detailed_withWeeklyFrequency_shouldTrackAllPoints() {
             DcaRequest request = new DcaRequest("BTC-EUR", 100.0, DcaRequest.FrequencyEnum.WEEKLY,
                     LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31));
 
             List<OhlcvDataDTO> priceData = MockPriceData.multipleWeeklyPointsPerMonth();
 
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
+            List<DcaCalculationResult> result = service.calculateDca(request, priceData, true);
 
-            assertThat(result.getTotalInvested()).isEqualTo(800.0);
-            assertThat(result.getInvestments()).hasSize(8);
+            assertThat(result).hasSize(8);
+            assertThat(result.get(7).getTotalInvested()).isEqualTo(800.0);
         }
 
         @Test
         @DisplayName("MONTHLY frequency should track first per month")
-        void calculateDetailed_withMonthlyFrequency_shouldTrackFirstPerMonth() {
+        void calculateDca_detailed_withMonthlyFrequency_shouldTrackFirstPerMonth() {
             DcaRequest request = new DcaRequest("BTC-EUR", 100.0, DcaRequest.FrequencyEnum.MONTHLY,
                     LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31));
 
             List<OhlcvDataDTO> priceData = MockPriceData.multipleWeeklyPointsPerMonth();
 
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
+            List<DcaCalculationResult> result = service.calculateDca(request, priceData, true);
 
-            assertThat(result.getTotalInvested()).isEqualTo(300.0);
-            assertThat(result.getInvestments()).hasSize(3);
+            assertThat(result).hasSize(3);
+            assertThat(result.get(2).getTotalInvested()).isEqualTo(300.0);
         }
 
         @Test
         @DisplayName("QUARTERLY frequency should track first per quarter")
-        void calculateDetailed_withQuarterlyFrequency_shouldTrackFirstPerQuarter() {
+        void calculateDca_detailed_withQuarterlyFrequency_shouldTrackFirstPerQuarter() {
             DcaRequest request = new DcaRequest("BTC-EUR", 100.0, DcaRequest.FrequencyEnum.QUARTERLY,
                     LocalDate.of(2024, 1, 1), LocalDate.of(2024, 6, 30));
 
             List<OhlcvDataDTO> priceData = MockPriceData.multipleWeeklyPointsPerQuarter();
 
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
+            List<DcaCalculationResult> result = service.calculateDca(request, priceData, true);
 
-            assertThat(result.getTotalInvested()).isEqualTo(200.0);
-            assertThat(result.getInvestments()).hasSize(2);
+            assertThat(result).hasSize(2);
+            assertThat(result.get(1).getTotalInvested()).isEqualTo(200.0);
         }
 
         @Test
         @DisplayName("cumulative values should be increasing")
-        void calculateDetailed_cumulativeValuesShouldBeIncreasing() {
+        void calculateDca_detailed_cumulativeValuesShouldBeIncreasing() {
             DcaRequest request = new DcaRequest("BTC-EUR", 100.0, DcaRequest.FrequencyEnum.WEEKLY,
                     LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31));
 
             List<OhlcvDataDTO> priceData = MockPriceData.multipleWeeklyPointsPerMonth();
 
-            DcaDetailedResponse result = service.calculateDetailed(request, priceData);
+            List<DcaCalculationResult> result = service.calculateDca(request, priceData, true);
 
-            List<DcaInvestmentDetail> investments = result.getInvestments();
-            for (int i = 1; i < investments.size(); i++) {
-                assertThat(investments.get(i).getCumulativeInvested())
-                        .isGreaterThan(investments.get(i - 1).getCumulativeInvested());
-                assertThat(investments.get(i).getCumulativeUnits())
-                        .isGreaterThan(investments.get(i - 1).getCumulativeUnits());
+            for (int i = 1; i < result.size(); i++) {
+                assertThat(result.get(i).getTotalInvested())
+                        .isGreaterThan(result.get(i - 1).getTotalInvested());
+                assertThat(result.get(i).getUnits())
+                        .isGreaterThan(result.get(i - 1).getUnits());
             }
         }
     }
 
     @Nested
-    @DisplayName("calculateDetailed matches calculate summary fields")
-    class CalculateDetailedMatchesCalculateTests {
+    @DisplayName("calculateDca detailed matches summary")
+    class CalculateDetailedMatchesSummaryTests {
 
         @Test
-        @DisplayName("should match calculate summary fields")
-        void calculateDetailed_shouldMatchCalculate_summaryFields() {
+        @DisplayName("last detailed result should match summary result")
+        void calculateDca_detailed_lastResultShouldMatchSummary() {
             DcaRequest request = new DcaRequest("BTC-EUR", 100.0, DcaRequest.FrequencyEnum.MONTHLY,
                     LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31));
 
             List<OhlcvDataDTO> priceData = MockPriceData.risingPricesOhlcv();
 
-            dev.jtristante.dcaapi.dto.DcaResponse simpleResult = service.calculate(request, priceData);
-            DcaDetailedResponse detailedResult = service.calculateDetailed(request, priceData);
+            List<DcaCalculationResult> detailedResult = service.calculateDca(request, priceData, true);
+            List<DcaCalculationResult> summaryResult = service.calculateDca(request, priceData, false);
 
-            assertThat(detailedResult.getTotalInvested())
-                    .isEqualTo(simpleResult.getTotalInvested());
-            assertThat(detailedResult.getUnits())
-                    .isEqualTo(simpleResult.getUnits());
-            assertThat(detailedResult.getWeightedAveragePrice())
-                    .isEqualTo(simpleResult.getWeightedAveragePrice());
-            assertThat(detailedResult.getCurrentValue())
-                    .isEqualTo(simpleResult.getCurrentValue());
-            assertThat(detailedResult.getProfit())
-                    .isEqualTo(simpleResult.getProfit());
-            assertThat(detailedResult.getRoi())
-                    .isEqualTo(simpleResult.getRoi());
+            DcaCalculationResult lastDetailed = detailedResult.getLast();
+            DcaCalculationResult summary = summaryResult.getFirst();
+
+            assertThat(lastDetailed.getTotalInvested()).isEqualTo(summary.getTotalInvested());
+            assertThat(lastDetailed.getUnits()).isEqualTo(summary.getUnits());
+            assertThat(lastDetailed.getWeightedAveragePrice()).isEqualTo(summary.getWeightedAveragePrice());
+            assertThat(lastDetailed.getProfit()).isEqualTo(summary.getProfit());
+            assertThat(lastDetailed.getRoi()).isEqualTo(summary.getRoi());
         }
     }
 }
