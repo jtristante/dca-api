@@ -69,6 +69,14 @@ paths:
         - DCA
       security:
         - ApiKeyAuth: [ ]
+      parameters:
+        - name: detailed
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: Whether to return detailed investment breakdown
       requestBody:
         required: true
         content:
@@ -77,11 +85,13 @@ paths:
               $ref: '#/components/schemas/DcaRequest'
       responses:
         '200':
-          description: Successful calculation
+          description: Successful calculation - returns list of DCA calculation results
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DcaResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/DcaCalculationResult'
         '400':
           description: Bad Request - Validation error
         '401':
@@ -149,39 +159,46 @@ components:
           type: string
           format: date
           example: '2026-01-16'
-    DcaResponse:
+    DcaCalculationResult:
       type: object
+      required:
+        - date
+        - profit
+        - roi
+        - total_invested
+        - units
+        - weighted_average_price
       properties:
-        total_invested:
-          type: number
-          format: double
-          description: Total amount invested across all periods
-          example: 15600
-        units:
-          type: number
-          format: double
-          description: Total units accumulated through DCA purchases
-          example: 0.342
-        weighted_average_price:
-          type: number
-          format: double
-          description: Weighted average purchase price per unit
-          example: 45230.50
-        current_value:
-          type: number
-          format: double
-          description: Current value of accumulated units based on latest price
-          example: 28500
+        date:
+          type: string
+          format: date
+          description: Date of the calculation point (end date for summary, purchase date for detailed)
+          example: '2023-01-15'
         profit:
           type: number
           format: double
-          description: Absolute profit or loss (current_value - total_invested)
-          example: 12900
+          description: Absolute profit or loss at this date (current_value - total_invested)
+          example: 24066.16
         roi:
           type: number
           format: double
-          description: Return on investment as a decimal (e.g., 0.082 = 8.2%)
-          example: 0.082
+          description: Return on investment as a decimal (e.g., 1.399 = 139.9%)
+          example: 1.399
+        total_invested:
+          type: number
+          format: double
+          description: Total amount invested up to this date
+          example: 17200.0
+        units:
+          type: number
+          format: double
+          description: Total units accumulated up to this date
+          example: 149.25010955
+        weighted_average_price:
+          type: number
+          format: double
+          description: Weighted average purchase price per unit up to this date
+          example: 115.24
     SymbolResponse:
       type: object
       required:

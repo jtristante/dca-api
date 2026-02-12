@@ -68,12 +68,13 @@ class DcaCalculationIntegrationTest {
                             }
                             """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total_invested").isNumber())
-                .andExpect(jsonPath("$.units").isNumber())
-                .andExpect(jsonPath("$.weighted_average_price").isNumber())
-                .andExpect(jsonPath("$.current_value").isNumber())
-                .andExpect(jsonPath("$.profit").isNumber())
-                .andExpect(jsonPath("$.roi").isNumber());
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].total_invested").isNumber())
+                .andExpect(jsonPath("$[0].units").isNumber())
+                .andExpect(jsonPath("$[0].weighted_average_price").isNumber())
+                .andExpect(jsonPath("$[0].profit").isNumber())
+                .andExpect(jsonPath("$[0].roi").isNumber())
+                .andExpect(jsonPath("$[0].date").isString());
     }
 
     @Test
@@ -91,9 +92,10 @@ class DcaCalculationIntegrationTest {
                             }
                             """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total_invested").isNumber())
-                .andExpect(jsonPath("$.units").isNumber())
-                .andExpect(jsonPath("$.units").value(org.hamcrest.Matchers.greaterThan(0.0)));
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].total_invested").isNumber())
+                .andExpect(jsonPath("$[0].units").isNumber())
+                .andExpect(jsonPath("$[0].units").value(org.hamcrest.Matchers.greaterThan(0.0)));
     }
 
     @Test
@@ -144,5 +146,142 @@ class DcaCalculationIntegrationTest {
                             }
                             """))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void calculateDca_detailedTrue_shouldReturnMultipleResults() throws Exception {
+        mockMvc.perform(post("/api/v1/dca/calculate")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .param("detailed", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "symbol": "AAPL",
+                                "amount": 100.0,
+                                "frequency": "monthly",
+                                "start_date": "2026-01-01",
+                                "end_date": "2026-02-28"
+                            }
+                            """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(org.hamcrest.Matchers.greaterThan(1))))
+                .andExpect(jsonPath("$[0].total_invested").isNumber())
+                .andExpect(jsonPath("$[0].units").isNumber())
+                .andExpect(jsonPath("$[0].date").isString())
+                .andExpect(jsonPath("$[1].total_invested").isNumber())
+                .andExpect(jsonPath("$[1].date").isString());
+    }
+
+    @Test
+    void calculateDca_detailedFalse_shouldReturnSingleResult() throws Exception {
+        mockMvc.perform(post("/api/v1/dca/calculate")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .param("detailed", "false")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "symbol": "AAPL",
+                                "amount": 100.0,
+                                "frequency": "monthly",
+                                "start_date": "2026-01-01",
+                                "end_date": "2026-02-28"
+                            }
+                            """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(1)))
+                .andExpect(jsonPath("$[0].total_invested").isNumber())
+                .andExpect(jsonPath("$[0].units").isNumber())
+                .andExpect(jsonPath("$[0].date").isString());
+    }
+
+    @Test
+    void calculateDca_detailedDefault_shouldReturnSingleResult() throws Exception {
+        mockMvc.perform(post("/api/v1/dca/calculate")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "symbol": "AAPL",
+                                "amount": 100.0,
+                                "frequency": "monthly",
+                                "start_date": "2026-01-01",
+                                "end_date": "2026-02-28"
+                            }
+                            """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(1)))
+                .andExpect(jsonPath("$[0].total_invested").isNumber())
+                .andExpect(jsonPath("$[0].units").isNumber())
+                .andExpect(jsonPath("$[0].date").isString());
+    }
+
+    @Test
+    void calculateDca_detailedTrue_shouldHaveCorrectFields() throws Exception {
+        mockMvc.perform(post("/api/v1/dca/calculate")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .param("detailed", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "symbol": "AAPL",
+                                "amount": 100.0,
+                                "frequency": "monthly",
+                                "start_date": "2026-01-01",
+                                "end_date": "2026-01-31"
+                            }
+                            """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].date").isString())
+                .andExpect(jsonPath("$[0].total_invested").isNumber())
+                .andExpect(jsonPath("$[0].units").isNumber())
+                .andExpect(jsonPath("$[0].weighted_average_price").isNumber())
+                .andExpect(jsonPath("$[0].profit").isNumber())
+                .andExpect(jsonPath("$[0].roi").isNumber());
+    }
+
+    @Test
+    void calculateDca_detailedTrue_singlePurchase_shouldHaveOneResult() throws Exception {
+        mockMvc.perform(post("/api/v1/dca/calculate")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .param("detailed", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "symbol": "AAPL",
+                                "amount": 100.0,
+                                "frequency": "monthly",
+                                "start_date": "2026-01-01",
+                                "end_date": "2026-01-15"
+                            }
+                            """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(1)));
+    }
+
+    @Test
+    void calculateDca_detailedTrue_cumulativeValuesShouldBeIncreasing() throws Exception {
+        mockMvc.perform(post("/api/v1/dca/calculate")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .param("detailed", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "symbol": "AAPL",
+                                "amount": 100.0,
+                                "frequency": "monthly",
+                                "start_date": "2026-01-01",
+                                "end_date": "2026-03-31"
+                            }
+                            """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(org.hamcrest.Matchers.greaterThan(1))))
+                .andExpect(jsonPath("$[1].total_invested").value(org.hamcrest.Matchers.greaterThan(0.0)))
+                .andExpect(jsonPath("$[1].units").value(org.hamcrest.Matchers.greaterThan(0.0)));
     }
 }

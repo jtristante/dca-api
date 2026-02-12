@@ -1,8 +1,8 @@
 package dev.jtristante.dcaapi.controller;
 
 import dev.jtristante.dcaapi.api.DcaApi;
+import dev.jtristante.dcaapi.dto.DcaCalculationResult;
 import dev.jtristante.dcaapi.dto.DcaRequest;
-import dev.jtristante.dcaapi.dto.DcaResponse;
 import dev.jtristante.dcaapi.dto.OhlcvDataDTO;
 import dev.jtristante.dcaapi.model.Symbol;
 import dev.jtristante.dcaapi.service.DcaCalculationService;
@@ -34,7 +34,7 @@ public class DcaController implements DcaApi {
     }
 
     @Override
-    public ResponseEntity<DcaResponse> calculateDca(DcaRequest dcaRequest) {
+    public ResponseEntity<List<DcaCalculationResult>> calculateDca(DcaRequest dcaRequest, Boolean detailed) {
         validateDateRange(dcaRequest);
 
         Symbol symbol = symbolService.findOrSearchByTicker(dcaRequest.getSymbol())
@@ -46,7 +46,7 @@ public class DcaController implements DcaApi {
                 dcaRequest.getEndDate()
         );
 
-        return ResponseEntity.ok(dcaCalculationService.calculate(dcaRequest, ohlcvData));
+        return ResponseEntity.ok(dcaCalculationService.calculateDca(dcaRequest, ohlcvData, Boolean.TRUE.equals(detailed)));
     }
 
     private void validateDateRange(DcaRequest request) {
