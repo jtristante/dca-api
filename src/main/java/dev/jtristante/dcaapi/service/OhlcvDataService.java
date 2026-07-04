@@ -11,6 +11,7 @@ import dev.jtristante.dcaapi.model.Symbol;
 import dev.jtristante.dcaapi.repository.OhlcvDataRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -27,15 +28,16 @@ public class OhlcvDataService {
     private final OhlcvDataPersistenceService ohlcvDataPersistenceService;
 
     public OhlcvDataService(OhlcvDataRepository ohlcvDataRepository,
-                           YahooFinanceApi yahooFinanceApi,
-                           OhlcvDataMapper ohlcvDataMapper,
-                           OhlcvDataPersistenceService ohlcvDataPersistenceService) {
+                            YahooFinanceApi yahooFinanceApi,
+                            OhlcvDataMapper ohlcvDataMapper,
+                            OhlcvDataPersistenceService ohlcvDataPersistenceService) {
         this.ohlcvDataRepository = ohlcvDataRepository;
         this.yahooFinanceApi = yahooFinanceApi;
         this.ohlcvDataMapper = ohlcvDataMapper;
         this.ohlcvDataPersistenceService = ohlcvDataPersistenceService;
     }
 
+    @Cacheable(value = "ohlcvData", key = "#symbol.id + '-' + #startDate + '-' + #endDate", sync = true, unless = "#result == null")
     public List<OhlcvDataDTO> getOhlcvData(Symbol symbol, LocalDate startDate, LocalDate endDate) {
         List<OhlcvData> existingData = ohlcvDataRepository.findBySymbolIdAndDateRange(
                 symbol.getId(), startDate, endDate
