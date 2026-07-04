@@ -8,6 +8,7 @@ import dev.jtristante.dcaapi.mapper.SymbolMapper;
 import dev.jtristante.dcaapi.model.Symbol;
 import dev.jtristante.dcaapi.repository.SymbolRepository;
 import io.micrometer.common.util.StringUtils;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -44,6 +45,7 @@ public class SymbolService {
         return symbolMapper.symbolListToSymbolResponseList(symbols);
     }
 
+    @Cacheable(value = "symbolSearch", key = "'search:' + (#ticker ?: '')", unless = "#result == null || #result.toString() == 'Optional.empty'")
     public Optional<Symbol> findOrSearchByTicker(String ticker) {
         List<Symbol> symbols = findOrSearchSymbols(ticker, null);
         return symbols.stream()
@@ -84,6 +86,7 @@ public class SymbolService {
         return symbols;
     }
 
+    @Cacheable(value = "symbolByTicker", key = "'ticker:' + #ticker", unless = "#result == null || #result.toString() == 'Optional.empty'")
     public Optional<Symbol> findByTicker(String ticker) {
         return symbolRepository.findByTickerIgnoreCase(ticker);
     }
