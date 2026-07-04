@@ -1,0 +1,201 @@
+openapi: 3.0.3
+info:
+  title: DCA API
+  description: API to calculate and simulate Dollar Cost Averaging (DCA) strategies.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local server
+paths:
+
+  /symbols:
+    get:
+      summary: Search symbols by name and/or ticker
+      operationId: searchSymbols
+      tags:
+        - Symbols
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        - name: ticker
+          in: query
+          required: false
+          schema:
+            type: string
+          example: AAPL
+          description: Ticker of the symbol to search for (case-insensitive, starts with). At least one of ticker or name must be provided.
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+          example: Apple
+          description: Name of the symbol to search for (case-insensitive, starts with). At least one of ticker or name must be provided.
+      responses:
+        '200':
+          description: Successful search
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SymbolResponse'
+        '401':
+          description: Unauthorized - Missing or invalid API key
+        '403':
+          description: Forbidden - Access denied
+
+  /status:
+    get:
+      summary: Check the health of the service
+      description: Returns the current operational status of the DCA API, including service name and timestamp.
+      operationId: getStatus
+      tags:
+        - HEALTH
+      responses:
+        "200":
+          description: Service is up and running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+
+  /dca/calculate:
+    post:
+      summary: Calculate DCA simulation
+      operationId: calculateDca
+      tags:
+        - DCA
+      security:
+        - ApiKeyAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DcaRequest'
+      responses:
+        '200':
+          description: Successful calculation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DcaResponse'
+        '400':
+          description: Bad Request - Validation error
+        '401':
+          description: Unauthorized - Missing or invalid API key
+        '403':
+          description: Forbidden - Access denied
+
+components:
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-DCA-Internal-Key
+      description: "API Key required to access protected endpoints"
+
+  schemas:
+
+    StatusResponse:
+      type: object
+      description: Response object containing the current status of the service
+      properties:
+        status:
+          type: string
+          description: Current status of the service (e.g., "ok", "down")
+          example: ok
+        service:
+          type: string
+          description: Name of the service reporting its status
+          example: dca-api
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp indicating when the status was generated
+          example: "2026-01-18T12:34:56Z"
+      required:
+        - status
+        - service
+        - timestamp
+    DcaRequest:
+      type: object
+      required:
+        - symbol
+        - amount
+        - frequency
+        - start_date
+        - end_date
+      properties:
+        symbol:
+          type: string
+          example: BTC-EUR
+        amount:
+          type: number
+          format: double
+          example: 100
+        frequency:
+          type: string
+          enum: [ weekly, monthly, quarterly ]
+          example: weekly
+        start_date:
+          type: string
+          format: date
+          example: '2023-01-01'
+        end_date:
+          type: string
+          format: date
+          example: '2026-01-16'
+    DcaResponse:
+      type: object
+      properties:
+        total_invested:
+          type: number
+          format: double
+          description: Total amount invested across all periods
+          example: 15600
+        units:
+          type: number
+          format: double
+          description: Total units accumulated through DCA purchases
+          example: 0.342
+        weighted_average_price:
+          type: number
+          format: double
+          description: Weighted average purchase price per unit
+          example: 45230.50
+        current_value:
+          type: number
+          format: double
+          description: Current value of accumulated units based on latest price
+          example: 28500
+        profit:
+          type: number
+          format: double
+          description: Absolute profit or loss (current_value - total_invested)
+          example: 12900
+        roi:
+          type: number
+          format: double
+          description: Return on investment as a decimal (e.g., 0.082 = 8.2%)
+          example: 0.082
+    SymbolResponse:
+      type: object
+      required:
+        - ticker
+        - name
+        - instrumentType
+      properties:
+        ticker:
+          type: string
+          example: BTC-EUR
+        name:
+          type: string
+          example: Bitcoin Euro
+        instrumentType:
+          type: string
+          enum: [ STOCKS, ETF, INDEX, CRYPTO ]
+          example: STOCKS

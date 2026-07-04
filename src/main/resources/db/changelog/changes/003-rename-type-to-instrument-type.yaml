@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-rename-type-to-instrument-type
+      author: jtristante
+      changes:
+        - renameColumn:
+            tableName: symbols
+            oldColumnName: type
+            newColumnName: instrument_type
+            columnDataType: VARCHAR(50)
+            remarks: "Rename type column to instrument_type for better clarity"
+
+        - dropIndex:
+            tableName: symbols
+            indexName: idx_symbols_type
+
+        - createIndex:
+            tableName: symbols
+            indexName: idx_symbols_instrument_type
+            columns:
+              - column:
+                  name: instrument_type

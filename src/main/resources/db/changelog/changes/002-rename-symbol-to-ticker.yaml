@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-rename-symbol-to-ticker
+      author: jtristante
+      changes:
+        - renameColumn:
+            tableName: symbols
+            oldColumnName: symbol
+            newColumnName: ticker
+            columnDataType: VARCHAR(32)
+        - dropUniqueConstraint:
+            tableName: symbols
+            constraintName: uk_symbols_symbol
+        - addUniqueConstraint:
+            tableName: symbols
+            columnNames: ticker
+            constraintName: uk_symbols_ticker

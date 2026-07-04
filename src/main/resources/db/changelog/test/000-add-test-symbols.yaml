@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 000-add-test-symbols
+      author: jtristante
+      context: test
+      changes:
+        - insert:
+            tableName: symbols
+            columns:
+              - column: { name: ticker, value: "BTC-EUR" }
+              - column: { name: name, value: "Bitcoin Euro" }
+              - column: { name: instrument_type, value: "STOCKS" }
+        - insert:
+            tableName: symbols
+            columns:
+              - column: { name: ticker, value: "ETH-EUR" }
+              - column: { name: name, value: "Ethereum Euro" }
+              - column: { name: instrument_type, value: "ETF" }
+        - insert:
+            tableName: symbols
+            columns:
+              - column: { name: ticker, value: "SPY" }
+              - column: { name: name, value: "SPDR S&P 500 ETF Trust" }
+              - column: { name: instrument_type, value: "INDEX" }
+        - insert:
+            tableName: symbols
+            columns:
+              - column: { name: ticker, value: "AAPL" }
+              - column: { name: name, value: "Apple Inc." }
+              - column: { name: instrument_type, value: "STOCKS" }

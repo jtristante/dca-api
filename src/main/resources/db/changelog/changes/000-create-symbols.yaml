@@ -1,0 +1,43 @@
+databaseChangeLog:
+  - changeSet:
+      id: 000-create-symbols-table
+      author: jtristante
+      changes:
+        - createTable:
+            tableName: symbols
+            remarks: "Master table for financial instruments (stocks, crypto, ETFs, etc)"
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  remarks: "Primary key"
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_symbols
+              - column:
+                  name: symbol
+                  type: VARCHAR(32)
+                  remarks: "Ticker or symbol, e.g. BTC-EUR, AAPL"
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uk_symbols_symbol
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  remarks: "Human readable name, e.g. Bitcoin, Apple Inc."
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: VARCHAR(50)
+                  remarks: "Asset type: CRYPTO, STOCK, ETF, INDEX..."
+                  constraints:
+                    nullable: false
+
+        - createIndex:
+            tableName: symbols
+            indexName: idx_symbols_type
+            columns:
+              - column:
+                  name: type

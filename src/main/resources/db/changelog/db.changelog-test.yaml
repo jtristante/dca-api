@@ -1,0 +1,11 @@
+databaseChangeLog:
+  # Include all production schema changes (no context - runs everywhere)
+  - includeAll:
+      path: changes/
+      relativeToChangelogFile: true
+  
+  # Include test-specific data changes (context: test - only runs when context="test")
+  - includeAll:
+      path: test/
+      context: test
+      relativeToChangelogFile: true
